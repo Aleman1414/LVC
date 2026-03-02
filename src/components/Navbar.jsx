@@ -34,8 +34,9 @@ const Navbar = () => {
         <>
             {/* Desktop Sidebar */}
             <nav className="hidden md:flex flex-col w-64 bg-primary text-white h-screen sticky top-0">
-                <div className="p-6 text-2xl font-bold border-b border-primary-light">
-                    LVC
+                <div className="p-6 text-2xl font-bold border-b border-primary-light flex items-center space-x-3">
+                    <img src="/logo.jpg" alt="LVC Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1" />
+                    <span>LVC</span>
                 </div>
                 <div className="flex-1 py-6 space-y-2">
                     {navItems.map((item) => (
@@ -73,7 +74,10 @@ const Navbar = () => {
 
             {/* Mobile Top Header */}
             <header className="md:hidden flex items-center justify-between px-4 h-16 bg-primary text-white sticky top-0 z-40 shadow-lg">
-                <div className="text-xl font-bold">LVC</div>
+                <div className="text-xl font-bold flex items-center space-x-2">
+                    <img src="/logo.jpg" alt="LVC Logo" className="w-8 h-8 object-contain bg-white rounded-full p-1" />
+                    <span>LVC</span>
+                </div>
                 <NavLink to="/profile" className="text-white">
                     <UserCircle size={28} />
                 </NavLink>

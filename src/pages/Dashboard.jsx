@@ -1,15 +1,20 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useFirestore } from '../hooks/useFirestore';
 import { Trophy, Calendar, Users, History } from 'lucide-react';
 
 const Dashboard = () => {
     const { userData } = useAuth();
+    const { data: teams } = useFirestore('teams');
+    const { data: players } = useFirestore('players');
+    const { data: matches } = useFirestore('matches');
+    const { data: sanctions } = useFirestore('sanctions');
 
     const stats = [
-        { name: 'Equipos', value: '12', icon: Trophy, color: 'text-primary' },
-        { name: 'Jugadores', value: '148', icon: Users, color: 'text-secondary' },
-        { name: 'Próximos Partidos', value: '4', icon: Calendar, color: 'text-blue-500' },
-        { name: 'Sanciones Activas', value: '3', icon: History, color: 'text-red-500' },
+        { name: 'Equipos', value: teams?.length?.toString() || '0', icon: Trophy, color: 'text-primary' },
+        { name: 'Jugadores', value: players?.length?.toString() || '0', icon: Users, color: 'text-secondary' },
+        { name: 'Visitas / Partidos', value: matches?.length?.toString() || '0', icon: Calendar, color: 'text-blue-500' },
+        { name: 'Sanciones', value: sanctions?.length?.toString() || '0', icon: History, color: 'text-red-500' },
     ];
 
     return (
