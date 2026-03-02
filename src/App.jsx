@@ -29,7 +29,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="teams" element={<Teams />} />
             <Route path="players" element={<Players />} />

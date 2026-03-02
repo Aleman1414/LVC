@@ -60,6 +60,7 @@ const Teams = () => {
             setLogoFile(null);
         } catch (err) {
             console.error("Error saving team:", err);
+            alert("Error al guardar el equipo. Posiblemente no tengas permisos de Administrador.");
         }
     };
 

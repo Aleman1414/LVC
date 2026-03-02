@@ -60,6 +60,19 @@ const Players = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Validation: Check if player already exists in another team by ID or exactly by Name
+            const isDuplicate = players.some(p => {
+                if (currentPlayer && p.id === currentPlayer.id) return false;
+                const sameId = formData.idNumber && p.idNumber === formData.idNumber;
+                const sameName = p.name.trim().toLowerCase() === formData.name.trim().toLowerCase();
+                return sameId || sameName;
+            });
+
+            if (isDuplicate) {
+                alert('No se puede guardar: Ya existe un jugador registrado con ese nombre o número de identidad en el sistema.');
+                return;
+            }
+
             let photoUrl = currentPlayer?.photoUrl || '';
             if (photoFile) {
                 photoUrl = await uploadFile(photoFile, `players/${Date.now()}_${photoFile.name}`);
