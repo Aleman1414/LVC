@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { Trophy, Calendar, Users, History } from 'lucide-react';
 
 const Dashboard = () => {
