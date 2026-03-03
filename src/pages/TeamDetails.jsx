@@ -24,9 +24,33 @@ const TeamDetails = () => {
         return standings.length > 0 ? standings[0] : null;
     }, [team, matches, matchesLoading, teamsLoading]);
 
-    const generatePDF = () => {
+    const generatePDF = async () => {
         try {
             const doc = new jsPDF();
+
+            // Try to add logo
+            if (team.logoUrl) {
+                try {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.src = team.logoUrl;
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const dataUrl = canvas.toDataURL('image/png');
+
+                    doc.addImage(dataUrl, 'PNG', 160, 10, 30, 30);
+                } catch (imgError) {
+                    console.error("No se pudo cargar el logo para el PDF", imgError);
+                }
+            }
 
             // Header
             doc.setFontSize(22);
