@@ -25,62 +25,69 @@ const TeamDetails = () => {
     }, [team, matches, matchesLoading, teamsLoading]);
 
     const generatePDF = () => {
-        const doc = new jsPDF();
+        try {
+            const doc = new jsPDF();
 
-        // Header
-        doc.setFontSize(22);
-        doc.text(`Reporte de Equipo: ${team.name}`, 14, 20);
-        doc.setFontSize(14);
-        doc.text(`Categoría: ${team.category}`, 14, 30);
-        doc.setFontSize(10);
-        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 35);
+            // Header
+            doc.setFontSize(22);
+            doc.text(`Reporte de Equipo: ${team.name}`, 14, 20);
+            doc.setFontSize(14);
+            doc.text(`Categoría: ${team.category}`, 14, 30);
+            doc.setFontSize(10);
+            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 35);
 
-        // Stats
-        doc.setFontSize(16);
-        doc.text("Estadísticas del Torneo", 14, 45);
+            // Stats
+            doc.setFontSize(16);
+            doc.text("Estadísticas del Torneo", 14, 45);
 
-        const statsData = [
-            ["Puntos", "PJ", "Ganados", "Perdidos", "Sets a Favor", "Sets en Contra"],
-            [
-                teamStats?.points || 0,
-                teamStats?.pj || 0,
-                teamStats?.pg || 0,
-                teamStats?.pp || 0,
-                teamStats?.setsFavor || 0,
-                teamStats?.setsAgainst || 0
-            ]
-        ];
+            const statsData = [
+                ["Puntos", "PJ", "Ganados", "Perdidos", "Sets a Favor", "Sets en Contra"],
+                [
+                    teamStats?.points || 0,
+                    teamStats?.pj || 0,
+                    teamStats?.pg || 0,
+                    teamStats?.pp || 0,
+                    teamStats?.setsFavor || 0,
+                    teamStats?.setsAgainst || 0
+                ]
+            ];
 
-        doc.autoTable({
-            startY: 50,
-            head: [statsData[0]],
-            body: [statsData[1]],
-            theme: 'grid',
-            headStyles: { fillColor: [0, 51, 102] }
-        });
+            doc.autoTable({
+                startY: 50,
+                head: [statsData[0]],
+                body: [statsData[1]],
+                theme: 'grid',
+                headStyles: { fillColor: [0, 51, 102] }
+            });
 
-        // Players
-        doc.setFontSize(16);
-        doc.text("Plantilla de Jugadores", 14, doc.lastAutoTable.finalY + 15);
+            let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 80;
 
-        const playersData = teamPlayers.map(p => [
-            p.number,
-            p.name,
-            p.position,
-            p.age || 'N/A',
-            p.idNumber || 'N/A',
-            p.status === 'active' ? 'Activo' : 'Suspendido'
-        ]);
+            // Players
+            doc.setFontSize(16);
+            doc.text("Plantilla de Jugadores", 14, finalY + 15);
 
-        doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 20,
-            head: [["#", "Jugador", "Posición", "Edad", "Identidad", "Estado"]],
-            body: playersData,
-            theme: 'striped',
-            headStyles: { fillColor: [204, 0, 0] }
-        });
+            const playersData = teamPlayers.map(p => [
+                p.number,
+                p.name,
+                p.position,
+                p.age || 'N/A',
+                p.idNumber || 'N/A',
+                p.status === 'active' ? 'Activo' : 'Suspendido'
+            ]);
 
-        doc.save(`Reporte_${team.name.replace(/\s+/g, '_')}.pdf`);
+            doc.autoTable({
+                startY: finalY + 20,
+                head: [["#", "Jugador", "Posición", "Edad", "Identidad", "Estado"]],
+                body: playersData,
+                theme: 'striped',
+                headStyles: { fillColor: [204, 0, 0] }
+            });
+
+            doc.save(`Reporte_${team.name.replace(/\s+/g, '_')}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Hubo un error al generar el PDF. Revisa la consola para más detalles.");
+        }
     };
 
     if (teamsLoading || playersLoading || matchesLoading) return <div className="p-8 text-center text-slate-500">Cargando reporte del equipo...</div>;
