@@ -14,8 +14,8 @@ export const calculateStandings = (matches, teams) => {
 
     matches.filter(m => m.status === 'finished').forEach(match => {
         const { teamAId, teamBId, score } = match;
-        const setsA = score.setsA;
-        const setsB = score.setsB;
+        const setsA = Number(score?.setsA || 0);
+        const setsB = Number(score?.setsB || 0);
 
         if (standings[teamAId]) {
             standings[teamAId].pj += 1;
