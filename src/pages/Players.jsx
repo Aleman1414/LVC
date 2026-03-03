@@ -153,9 +153,9 @@ const Players = () => {
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${player.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                <span className={`text-xs px-2 py-1 rounded-full font-bold uppercase ${player.status === 'inactive' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                                     }`}>
-                                    {player.status === 'active' ? 'Activo' : 'Suspendido'}
+                                    {player.status === 'inactive' ? 'Inactivo' : 'Activo'}
                                 </span>
                                 <div className="flex space-x-2">
                                     <button onClick={() => handleOpenModal(player)} className="text-primary hover:bg-slate-100 p-1 rounded transition-colors"><Edit2 size={16} /></button>
@@ -208,6 +208,13 @@ const Players = () => {
                                     {teams.map(team => (
                                         <option key={team.id} value={team.id}>{team.name}</option>
                                     ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Estado</label>
+                                <select className="input-field" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                                    <option value="active">Activo</option>
+                                    <option value="inactive">Inactivo</option>
                                 </select>
                             </div>
                             <div>

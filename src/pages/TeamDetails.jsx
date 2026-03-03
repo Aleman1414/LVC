@@ -4,7 +4,7 @@ import { useFirestore } from '../hooks/useFirestore';
 import { calculateStandings } from '../services/standingsService';
 import { ShieldAlert, Trophy, User, ArrowLeft, ArrowUpRight, Target, Activity, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const TeamDetails = () => {
     const { id: teamId } = useParams();
@@ -52,7 +52,7 @@ const TeamDetails = () => {
                 ]
             ];
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: 50,
                 head: [statsData[0]],
                 body: [statsData[1]],
@@ -75,7 +75,7 @@ const TeamDetails = () => {
                 p.status === 'active' ? 'Activo' : 'Suspendido'
             ]);
 
-            doc.autoTable({
+            autoTable(doc, {
                 startY: finalY + 20,
                 head: [["#", "Jugador", "Posición", "Edad", "Identidad", "Estado"]],
                 body: playersData,
@@ -204,8 +204,8 @@ const TeamDetails = () => {
                                     <h3 className="font-bold text-slate-800 truncate">{player.name}</h3>
                                     <p className="text-xs font-semibold text-secondary uppercase mt-0.5">{player.position}</p>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className={`w-2 h-2 rounded-full ${player.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                        <span className="text-[10px] text-slate-400 capitalize">{player.status === 'active' ? 'Activo' : 'Suspendido'}</span>
+                                        <span className={`w-2 h-2 rounded-full ${player.status === 'inactive' ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                                        <span className="text-[10px] text-slate-400 capitalize">{player.status === 'inactive' ? 'Inactivo' : 'Activo'}</span>
                                     </div>
                                 </div>
                                 <div className="text-2xl font-black text-slate-200">
