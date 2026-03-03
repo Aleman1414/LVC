@@ -2,7 +2,9 @@ import React, { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useFirestore } from '../hooks/useFirestore';
 import { calculateStandings } from '../services/standingsService';
-import { ShieldAlert, Trophy, User, ArrowLeft, ArrowUpRight, Target, Activity } from 'lucide-react';
+import { ShieldAlert, Trophy, User, ArrowLeft, ArrowUpRight, Target, Activity, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const TeamDetails = () => {
     const { id: teamId } = useParams();
@@ -22,15 +24,80 @@ const TeamDetails = () => {
         return standings.length > 0 ? standings[0] : null;
     }, [team, matches, matchesLoading, teamsLoading]);
 
+    const generatePDF = () => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(22);
+        doc.text(`Reporte de Equipo: ${team.name}`, 14, 20);
+        doc.setFontSize(14);
+        doc.text(`Categoría: ${team.category}`, 14, 30);
+        doc.setFontSize(10);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 35);
+
+        // Stats
+        doc.setFontSize(16);
+        doc.text("Estadísticas del Torneo", 14, 45);
+
+        const statsData = [
+            ["Puntos", "PJ", "Ganados", "Perdidos", "Sets a Favor", "Sets en Contra"],
+            [
+                teamStats?.points || 0,
+                teamStats?.pj || 0,
+                teamStats?.pg || 0,
+                teamStats?.pp || 0,
+                teamStats?.setsFavor || 0,
+                teamStats?.setsAgainst || 0
+            ]
+        ];
+
+        doc.autoTable({
+            startY: 50,
+            head: [statsData[0]],
+            body: [statsData[1]],
+            theme: 'grid',
+            headStyles: { fillColor: [0, 51, 102] }
+        });
+
+        // Players
+        doc.setFontSize(16);
+        doc.text("Plantilla de Jugadores", 14, doc.lastAutoTable.finalY + 15);
+
+        const playersData = teamPlayers.map(p => [
+            p.number,
+            p.name,
+            p.position,
+            p.age || 'N/A',
+            p.idNumber || 'N/A',
+            p.status === 'active' ? 'Activo' : 'Suspendido'
+        ]);
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 20,
+            head: [["#", "Jugador", "Posición", "Edad", "Identidad", "Estado"]],
+            body: playersData,
+            theme: 'striped',
+            headStyles: { fillColor: [204, 0, 0] }
+        });
+
+        doc.save(`Reporte_${team.name.replace(/\s+/g, '_')}.pdf`);
+    };
+
     if (teamsLoading || playersLoading || matchesLoading) return <div className="p-8 text-center text-slate-500">Cargando reporte del equipo...</div>;
     if (!team) return <div className="p-8 text-center text-red-500 font-bold">Equipo no encontrado.</div>;
 
     return (
         <div className="space-y-6">
-            <button onClick={() => navigate('/teams')} className="flex items-center text-slate-500 hover:text-primary transition-colors">
-                <ArrowLeft size={20} className="mr-2" />
-                <span>Volver a Equipos</span>
-            </button>
+            <div className="flex justify-between items-center">
+                <button onClick={() => navigate('/teams')} className="flex items-center text-slate-500 hover:text-primary transition-colors">
+                    <ArrowLeft size={20} className="mr-2" />
+                    <span>Volver a Equipos</span>
+                </button>
+                <button onClick={generatePDF} className="flex items-center btn-primary space-x-2">
+                    <Download size={18} />
+                    <span>Descargar PDF</span>
+                </button>
+            </div>
 
             {/* Header / Team Card */}
             <div className="card flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
