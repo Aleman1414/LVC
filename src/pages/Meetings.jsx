@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useFirestore } from '../hooks/useFirestore';
-import { FileText, Plus, Download, Eye } from 'lucide-react';
+import { FileText, Plus, Download, Eye, Trash2 } from 'lucide-react';
 
 const Meetings = () => {
-    const { data: meetings, loading, addData, uploadFile } = useFirestore('meetings');
+    const { data: meetings, loading, addData, deleteData, uploadFile } = useFirestore('meetings');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ title: '', description: '', date: '' });
     const [pdfFile, setPdfFile] = useState(null);
@@ -69,6 +69,17 @@ const Meetings = () => {
                                 <Download size={18} />
                                 <span>Descargar</span>
                             </a>
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('¿Seguro que deseas eliminar esta acta?')) {
+                                        deleteData(meeting.id);
+                                    }
+                                }}
+                                className="bg-red-50 text-red-600 hover:bg-red-100 p-2 rounded-lg flex items-center justify-center transition-colors"
+                                title="Eliminar Acta"
+                            >
+                                <Trash2 size={18} />
+                            </button>
                         </div>
                     </div>
                 ))}
