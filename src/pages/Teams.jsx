@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFirestore } from '../hooks/useFirestore';
-import { Plus, Edit2, Trash2, Trophy } from 'lucide-react';
+import { Plus, Edit2, Trash2, Trophy, Eye } from 'lucide-react';
 
 const Teams = () => {
     const { data: teams, loading, addData, updateData, deleteData, uploadFile } = useFirestore('teams');
@@ -89,6 +90,13 @@ const Teams = () => {
                         <h3 className="text-xl font-bold">{team.name}</h3>
                         <p className="text-slate-500 mb-4">{team.category}</p>
                         <div className="flex space-x-2 mt-auto">
+                            <Link
+                                to={`/teams/${team.id}`}
+                                className="p-2 text-blue-500 hover:bg-slate-100 rounded-full transition-colors"
+                                title="Ver Reporte"
+                            >
+                                <Eye size={18} />
+                            </Link>
                             <button
                                 onClick={() => handleOpenModal(team)}
                                 className="p-2 text-primary hover:bg-slate-100 rounded-full transition-colors"

@@ -7,6 +7,7 @@ import PrivateRoute from './components/PrivateRoute';
 // Pages
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
+import TeamDetails from './pages/TeamDetails';
 import Players from './pages/Players';
 import Matches from './pages/Matches';
 import Standings from './pages/Standings';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="teams" element={<Teams />} />
+            <Route path="teams/:id" element={<TeamDetails />} />
             <Route path="players" element={<Players />} />
             <Route path="matches" element={<Matches />} />
             <Route path="standings" element={<Standings />} />
