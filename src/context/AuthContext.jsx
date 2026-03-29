@@ -4,10 +4,11 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { auth, db, googleProvider } from '../firebase/config';
 
 const AuthContext = createContext();
 
@@ -26,6 +27,10 @@ export function AuthProvider({ children }) {
 
     async function signup(email, password) {
         return createUserWithEmailAndPassword(auth, email, password);
+    }
+
+    async function loginWithGoogle() {
+        return signInWithPopup(auth, googleProvider);
     }
 
     function logout() {
@@ -58,6 +63,7 @@ export function AuthProvider({ children }) {
         userData,
         login,
         signup,
+        loginWithGoogle,
         logout,
         resetPassword
     };

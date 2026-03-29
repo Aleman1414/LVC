@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFirestore } from '../hooks/useFirestore';
-import { Plus, Edit2, Trash2, Trophy, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, Trophy, Eye, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Teams = () => {
-    const { data: teams, loading, addData, updateData, deleteData, uploadFile } = useFirestore('teams');
+    const { data: teams, loading: teamsLoading, addData, updateData, deleteData, uploadFile } = useFirestore('teams');
+    const { data: players, loading: playersLoading } = useFirestore('players');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentTeam, setCurrentTeam] = useState(null);
     const [formData, setFormData] = useState({
@@ -64,8 +67,54 @@ const Teams = () => {
             alert("Error al guardar el equipo. Posiblemente no tengas permisos de Administrador.");
         }
     };
+    
+    const generateRegistrationPDF = (team) => {
+        const teamPlayers = players.filter(p => p.teamId === team.id);
+        const doc = new jsPDF();
 
-    if (loading) return <div>Cargando equipos...</div>;
+        // Header
+        doc.setFontSize(20);
+        doc.text("FICHA DE INSCRIPCIÓN", 105, 20, { align: "center" });
+        
+        doc.setFontSize(14);
+        doc.text(`Equipo: ${team.name}`, 14, 35);
+        doc.text(`Categoría: ${team.category}`, 14, 43);
+        doc.text(`Delegado: ${team.delegateName || 'N/A'}`, 14, 51);
+        
+        doc.setFontSize(10);
+        doc.text(`Fecha de reporte: ${new Date().toLocaleDateString()}`, 14, 60);
+
+        const playersData = teamPlayers.map((p, index) => [
+            index + 1,
+            p.number,
+            p.name,
+            p.idNumber || 'N/A',
+            p.position,
+            p.status === 'inactive' ? 'Inactivo' : 'Activo'
+        ]);
+
+        autoTable(doc, {
+            startY: 65,
+            head: [["#", "Dorsal", "Nombre Completo", "Identidad", "Posición", "Estado"]],
+            body: playersData,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 51, 102] },
+            styles: { fontSize: 9 }
+        });
+
+        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 100;
+        
+        doc.setFontSize(10);
+        doc.text("__________________________", 40, finalY + 30);
+        doc.text("Firma del Delegado", 45, finalY + 35);
+        
+        doc.text("__________________________", 130, finalY + 30);
+        doc.text("Sello de la Liga", 140, finalY + 35);
+
+        doc.save(`Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
+    };
+
+    if (teamsLoading || playersLoading) return <div>Cargando equipos...</div>;
 
     return (
         <div className="space-y-6">
@@ -97,6 +146,13 @@ const Teams = () => {
                             >
                                 <Eye size={18} />
                             </Link>
+                            <button
+                                onClick={() => generateRegistrationPDF(team)}
+                                className="p-2 text-green-600 hover:bg-slate-100 rounded-full transition-colors"
+                                title="Inscripción (PDF)"
+                            >
+                                <FileText size={18} />
+                            </button>
                             <button
                                 onClick={() => handleOpenModal(team)}
                                 className="p-2 text-primary hover:bg-slate-100 rounded-full transition-colors"
