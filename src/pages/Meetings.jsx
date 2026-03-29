@@ -7,9 +7,11 @@ const Meetings = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({ title: '', description: '', date: '' });
     const [pdfFile, setPdfFile] = useState(null);
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         try {
             let pdfUrl = '';
             if (pdfFile) {
@@ -20,6 +22,7 @@ const Meetings = () => {
             setPdfFile(null);
         } catch (err) {
             console.error(err);
+            setError("Error al subir el acta. Verifica el archivo y permisos.");
         }
     };
 
@@ -32,7 +35,7 @@ const Meetings = () => {
                     <FileText className="text-secondary" />
                     <span>Actas de Reuniones</span>
                 </h1>
-                <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center space-x-2">
+                <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn-primary flex items-center space-x-2">
                     <Plus size={20} />
                     <span>Subir Acta</span>
                 </button>
@@ -89,6 +92,14 @@ const Meetings = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6">
                         <h2 className="text-2xl font-bold mb-4">Subir Nueva Acta</h2>
+                        
+                        {error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Título</label>

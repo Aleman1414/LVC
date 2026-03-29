@@ -10,6 +10,7 @@ const Teams = () => {
     const { data: players, loading: playersLoading } = useFirestore('players');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentTeam, setCurrentTeam] = useState(null);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         category: 'Masculino',
@@ -21,6 +22,7 @@ const Teams = () => {
     const [logoFile, setLogoFile] = useState(null);
 
     const handleOpenModal = (team = null) => {
+        setError('');
         if (team) {
             setCurrentTeam(team);
             setFormData({
@@ -64,7 +66,7 @@ const Teams = () => {
             setLogoFile(null);
         } catch (err) {
             console.error("Error saving team:", err);
-            alert("Error al guardar el equipo. Posiblemente no tengas permisos de Administrador.");
+            setError("Error al guardar el equipo. Posiblemente no tengas permisos de Administrador.");
         }
     };
     
@@ -177,6 +179,14 @@ const Teams = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold mb-4">{currentTeam ? 'Editar Equipo' : 'Nuevo Equipo'}</h2>
+                        
+                        {error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Nombre</label>

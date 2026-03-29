@@ -8,6 +8,7 @@ const Matches = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentMatch, setCurrentMatch] = useState(null);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         teamAId: '',
         teamBId: '',
@@ -20,6 +21,7 @@ const Matches = () => {
     });
 
     const handleOpenModal = (match = null) => {
+        setError('');
         if (match) {
             setCurrentMatch(match);
             setFormData({
@@ -76,6 +78,7 @@ const Matches = () => {
             setIsModalOpen(false);
         } catch (err) {
             console.error(err);
+            setError("Error al guardar el partido. Verifica los datos y permisos.");
         }
     };
 
@@ -148,6 +151,14 @@ const Matches = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold mb-4">{currentMatch ? 'Editar Partido/Resultados' : 'Programar Partido'}</h2>
+                        
+                        {error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

@@ -10,6 +10,7 @@ const Players = () => {
     const [currentPlayer, setCurrentPlayer] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterTeam, setFilterTeam] = useState('all');
+    const [error, setError] = useState('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -31,6 +32,7 @@ const Players = () => {
     }, [players, searchTerm, filterTeam]);
 
     const handleOpenModal = (player = null) => {
+        setError('');
         if (player) {
             setCurrentPlayer(player);
             setFormData({
@@ -69,7 +71,7 @@ const Players = () => {
             });
 
             if (isDuplicate) {
-                alert('No se puede guardar: Ya existe un jugador registrado con ese nombre o número de identidad en el sistema.');
+                setError('No se puede guardar: Ya existe un jugador registrado con ese nombre o número de identidad en el sistema.');
                 return;
             }
 
@@ -89,6 +91,7 @@ const Players = () => {
             setPhotoFile(null);
         } catch (err) {
             console.error("Error saving player:", err);
+            setError("Error al guardar el jugador. Verifica los datos y permisos.");
         }
     };
 
@@ -171,6 +174,14 @@ const Players = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold mb-4">{currentPlayer ? 'Editar Jugador' : 'Nuevo Jugador'}</h2>
+                        
+                        {error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2">

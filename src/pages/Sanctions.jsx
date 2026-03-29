@@ -14,9 +14,11 @@ const Sanctions = () => {
         observation: '',
         date: new Date().toISOString().split('T')[0]
     });
+    const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         const player = players.find(p => p.id === formData.playerId);
         try {
             await addData({
@@ -27,6 +29,7 @@ const Sanctions = () => {
             setIsModalOpen(false);
         } catch (err) {
             console.error(err);
+            setError("Error al registrar la sanción. Verifica los datos y permisos.");
         }
     };
 
@@ -42,7 +45,7 @@ const Sanctions = () => {
                     <Gavel className="text-secondary" />
                     <span>Control de Sanciones</span>
                 </h1>
-                <button onClick={() => setIsModalOpen(true)} className="btn-secondary flex items-center space-x-2">
+                <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn-secondary flex items-center space-x-2">
                     <Plus size={20} />
                     <span>Registrar Sanción</span>
                 </button>
@@ -75,6 +78,14 @@ const Sanctions = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
                     <div className="bg-white rounded-2xl max-w-lg w-full p-6">
                         <h2 className="text-2xl font-bold mb-4">Registrar Sanción</h2>
+                        
+                        {error && (
+                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
+                                <span>{error}</span>
+                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+                            </div>
+                        )}
+
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Jugador</label>

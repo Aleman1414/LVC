@@ -9,12 +9,24 @@ import {
     Trophy,
     FileText,
     Settings,
-    ShieldAlert
+    ShieldAlert,
+    LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-    const { userData } = useAuth();
+    const { userData, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error("Fallo al cerrar sesión", error);
+        }
+    };
 
     const navItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -53,6 +65,15 @@ const Navbar = () => {
                         </NavLink>
                     ))}
                 </div>
+                <div className="p-4 border-t border-primary-light">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-3 px-6 py-3 w-full text-slate-300 hover:bg-primary-light hover:text-white transition-colors rounded-lg"
+                    >
+                        <LogOut size={20} />
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
             </nav>
 
             {/* Mobile Bottom Nav */}
@@ -78,9 +99,14 @@ const Navbar = () => {
                     <img src="/logo.jpg" alt="LVC Logo" className="w-8 h-8 object-contain bg-white rounded-full p-1" />
                     <span>LVC</span>
                 </div>
-                <NavLink to="/profile" className="text-white">
-                    <UserCircle size={28} />
-                </NavLink>
+                <div className="flex items-center space-x-4">
+                    <NavLink to="/profile" className="text-white">
+                        <UserCircle size={28} />
+                    </NavLink>
+                    <button onClick={handleLogout} className="text-white">
+                        <LogOut size={24} />
+                    </button>
+                </div>
             </header>
         </>
     );
