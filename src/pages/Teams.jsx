@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFirestore } from '../hooks/useFirestore';
-import { Plus, Edit2, Trash2, Trophy, Eye, FileText } from 'lucide-react';
+import { Plus, Edit2, Trash2, Trophy, Eye, FileText, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const Teams = () => {
     const { data: teams, loading: teamsLoading, addData, updateData, deleteData, uploadFile } = useFirestore('teams');
@@ -140,16 +141,43 @@ const Teams = () => {
         doc.save(`Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
     };
 
+    const exportToExcel = () => {
+        const wb = XLSX.utils.book_new();
+        
+        teams.forEach(team => {
+            const teamPlayers = players.filter(p => p.teamId === team.id);
+            const data = teamPlayers.map((p, index) => ({
+                '#': index + 1,
+                'Dorsal': p.number,
+                'Nombre Completo': p.name,
+                'Identidad': p.idNumber || 'N/A',
+                'Posición': p.position,
+                'Estado': p.status === 'inactive' ? 'Inactivo' : 'Activo'
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, team.name.substring(0, 31));
+        });
+        
+        XLSX.writeFile(wb, `Inscripciones_LVC_${new Date().getFullYear()}.xlsx`);
+    };
+
     if (teamsLoading || playersLoading) return <div>Cargando equipos...</div>;
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Equipos</h1>
-                <button onClick={() => handleOpenModal()} className="btn-primary flex items-center space-x-2">
-                    <Plus size={20} />
-                    <span>Nuevo Equipo</span>
-                </button>
+                <h1 className="text-3xl font-bold text-primary">Equipos</h1>
+                <div className="flex space-x-3">
+                    <button onClick={exportToExcel} className="btn-secondary flex items-center space-x-2">
+                        <Download size={20} />
+                        <span>Exportar Excel</span>
+                    </button>
+                    <button onClick={() => handleOpenModal()} className="btn-primary flex items-center space-x-2">
+                        <Plus size={20} />
+                        <span>Nuevo Equipo</span>
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

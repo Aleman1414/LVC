@@ -82,6 +82,35 @@ const Matches = () => {
         }
     };
 
+    const groupedMatches = React.useMemo(() => {
+        const sorted = [...matches].sort((a, b) => {
+            const dateDiff = new Date(a.date) - new Date(b.date);
+            if (dateDiff === 0) {
+                return a.time.localeCompare(b.time);
+            }
+            return dateDiff;
+        });
+
+        const groups = [];
+        let currentGroup = null;
+        let jornadaCount = 0;
+
+        sorted.forEach(match => {
+            if (!currentGroup || currentGroup.date !== match.date) {
+                jornadaCount++;
+                currentGroup = {
+                    date: match.date,
+                    jornada: jornadaCount,
+                    matches: []
+                };
+                groups.push(currentGroup);
+            }
+            currentGroup.matches.push(match);
+        });
+
+        return groups;
+    }, [matches]);
+
     const getTeamName = (id) => teams.find(t => t.id === id)?.name || 'Desconocido';
 
     if (matchesLoading || teamsLoading) return <div>Cargando partidos...</div>;
@@ -96,55 +125,79 @@ const Matches = () => {
                 </button>
             </div>
 
-            <div className="space-y-4">
-                {matches.sort((a, b) => new Date(a.date) - new Date(b.date)).map((match) => (
-                    <div key={match.id} className="card flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center space-x-8 flex-1 justify-center md:justify-start">
-                            <div className="text-center w-24">
-                                <span className="font-bold block truncate">{getTeamName(match.teamAId)}</span>
-                                <span className="text-2xl font-black text-primary">{match.score?.setsA || 0}</span>
+            <div className="space-y-8">
+                {groupedMatches.map((group) => (
+                    <div key={group.date} className="space-y-4">
+                        <div className="flex items-center space-x-4">
+                            <div className="bg-primary text-white px-4 py-1 rounded-lg font-black text-sm uppercase tracking-wider">
+                                Jornada #{group.jornada}
                             </div>
-                            <div className="text-slate-300 font-bold italic">VS</div>
-                            <div className="text-center w-24">
-                                <span className="font-bold block truncate">{getTeamName(match.teamBId)}</span>
-                                <span className="text-2xl font-black text-secondary">{match.score?.setsB || 0}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center md:items-end space-y-1 text-sm text-slate-500 min-w-[150px]">
-                            <div className="flex items-center space-x-2">
+                            <div className="h-px bg-slate-200 flex-1"></div>
+                            <div className="text-slate-500 font-bold text-sm flex items-center space-x-2">
                                 <Calendar size={14} />
-                                <span>{match.date} {match.time}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <MapPin size={14} />
-                                <span>{match.location}</span>
+                                <span>{new Date(group.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            {match.status === 'pending' && (
-                                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
-                                    <Clock size={12} /> <span>Pendiente</span>
-                                </span>
-                            )}
-                            {match.status === 'live' && (
-                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 animate-pulse">
-                                    <Play size={12} /> <span>En Vivo</span>
-                                </span>
-                            )}
-                            {match.status === 'finished' && (
-                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
-                                    <CheckCircle size={12} /> <span>Finalizado</span>
-                                </span>
-                            )}
+                        <div className="space-y-3">
+                            {group.matches.map((match) => (
+                                <div key={match.id} className="card flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+                                    <div className="flex items-center space-x-8 flex-1 justify-center md:justify-start">
+                                        <div className="text-center w-28">
+                                            <span className="font-bold block truncate text-slate-700">{getTeamName(match.teamAId)}</span>
+                                            <span className="text-3xl font-black text-primary">{match.score?.setsA || 0}</span>
+                                        </div>
+                                        <div className="text-slate-400 font-bold italic text-sm">VS</div>
+                                        <div className="text-center w-28">
+                                            <span className="font-bold block truncate text-slate-700">{getTeamName(match.teamBId)}</span>
+                                            <span className="text-3xl font-black text-secondary">{match.score?.setsB || 0}</span>
+                                        </div>
+                                    </div>
 
-                            <button onClick={() => handleOpenModal(match)} className="text-primary hover:bg-slate-100 p-2 rounded-full">
-                                <Edit2 size={18} />
-                            </button>
+                                    <div className="flex flex-col items-center md:items-end space-y-1 text-sm text-slate-500 min-w-[150px]">
+                                        <div className="flex items-center space-x-2 font-bold text-primary-dark">
+                                            <Clock size={14} />
+                                            <span>{match.time}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <MapPin size={14} />
+                                            <span className="truncate max-w-[120px]">{match.location}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center space-x-3">
+                                        {match.status === 'pending' && (
+                                            <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center space-x-1">
+                                                <Clock size={10} /> <span>Pendiente</span>
+                                            </span>
+                                        )}
+                                        {match.status === 'live' && (
+                                            <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center space-x-1 animate-pulse">
+                                                <Play size={10} /> <span>En Vivo</span>
+                                            </span>
+                                        )}
+                                        {match.status === 'finished' && (
+                                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter flex items-center space-x-1">
+                                                <CheckCircle size={10} /> <span>Finalizado</span>
+                                            </span>
+                                        )}
+
+                                        <button onClick={() => handleOpenModal(match)} className="text-slate-400 hover:text-primary p-2 rounded-full transition-colors border border-slate-100 md:border-none">
+                                            <Edit2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ))}
+
+                {matches.length === 0 && (
+                    <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <Calendar size={48} className="mx-auto text-slate-300 mb-4" />
+                        <p className="text-slate-500 font-medium">No hay partidos programados todavía.</p>
+                    </div>
+                )}
             </div>
 
             {isModalOpen && (
