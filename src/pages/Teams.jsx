@@ -70,13 +70,37 @@ const Teams = () => {
         }
     };
     
-    const generateRegistrationPDF = (team) => {
+    const generateRegistrationPDF = async (team) => {
         const teamPlayers = players.filter(p => p.teamId === team.id);
-        const doc = new jsPDF();
+        const doc = jsPDF();
+
+        // Try to add logo
+        if (team.logoUrl) {
+            try {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.src = team.logoUrl;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                const dataUrl = canvas.toDataURL('image/png');
+
+                doc.addImage(dataUrl, 'PNG', 160, 10, 30, 30);
+            } catch (imgError) {
+                console.error("No se pudo cargar el logo para el PDF", imgError);
+            }
+        }
 
         // Header
         doc.setFontSize(20);
-        doc.text("FICHA DE INSCRIPCIÓN", 105, 20, { align: "center" });
+        doc.text("FICHA DE INSCRIPCIÓN", 14, 20);
         
         doc.setFontSize(14);
         doc.text(`Equipo: ${team.name}`, 14, 35);
@@ -111,7 +135,7 @@ const Teams = () => {
         doc.text("Firma del Delegado", 45, finalY + 35);
         
         doc.text("__________________________", 130, finalY + 30);
-        doc.text("Sello de la Liga", 140, finalY + 35);
+        doc.text("Sello de la League", 140, finalY + 35);
 
         doc.save(`Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
     };
