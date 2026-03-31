@@ -36,13 +36,13 @@ const Players = () => {
         if (player) {
             setCurrentPlayer(player);
             setFormData({
-                name: player.name,
-                number: player.number,
-                position: player.position,
-                age: player.age,
-                idNumber: player.idNumber,
-                status: player.status,
-                teamId: player.teamId
+                name: player.name || '',
+                number: player.number || '',
+                position: player.position || 'Universal',
+                age: player.age || '',
+                idNumber: player.idNumber || '',
+                status: player.status || 'active',
+                teamId: player.teamId || ''
             });
         } else {
             setCurrentPlayer(null);

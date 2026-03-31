@@ -34,13 +34,23 @@ export function useFirestore(collectionName) {
         return () => unsubscribe();
     }, [collectionName]);
 
+    const cleanData = (data) => {
+        const clean = { ...data };
+        Object.keys(clean).forEach(key => {
+            if (clean[key] === undefined) {
+                delete clean[key];
+            }
+        });
+        return clean;
+    };
+
     const addData = async (newData) => {
-        return await addDoc(collection(db, collectionName), newData);
+        return await addDoc(collection(db, collectionName), cleanData(newData));
     };
 
     const updateData = async (id, updatedData) => {
         const docRef = doc(db, collectionName, id);
-        return await updateDoc(docRef, updatedData);
+        return await updateDoc(docRef, cleanData(updatedData));
     };
 
     const deleteData = async (id) => {

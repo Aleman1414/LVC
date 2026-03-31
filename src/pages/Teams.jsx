@@ -27,12 +27,12 @@ const Teams = () => {
         if (team) {
             setCurrentTeam(team);
             setFormData({
-                name: team.name,
-                category: team.category,
-                foundationDate: team.foundationDate,
-                delegateName: team.delegateName,
-                contact: team.contact,
-                status: team.status
+                name: team.name || '',
+                category: team.category || 'Masculino',
+                foundationDate: team.foundationDate || '',
+                delegateName: team.delegateName || '',
+                contact: team.contact || '',
+                status: team.status || 'active'
             });
         } else {
             setCurrentTeam(null);
