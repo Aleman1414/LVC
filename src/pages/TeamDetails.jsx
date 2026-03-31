@@ -27,16 +27,17 @@ const TeamDetails = () => {
     const generatePDF = async () => {
         try {
             const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
 
-            // Try to add logo
-            if (team.logoUrl) {
+            // Logo Helper Function
+            const addLogo = async (url, x, y, size = 25) => {
                 try {
                     const img = new Image();
                     img.crossOrigin = "Anonymous";
-                    img.src = team.logoUrl;
+                    img.src = url;
                     await new Promise((resolve, reject) => {
                         img.onload = resolve;
-                        img.onerror = reject;
+                        img.onerror = () => reject(new Error(`No se pudo cargar: ${url}`));
                     });
 
                     const canvas = document.createElement('canvas');
@@ -45,66 +46,95 @@ const TeamDetails = () => {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     const dataUrl = canvas.toDataURL('image/png');
-
-                    doc.addImage(dataUrl, 'PNG', 160, 10, 30, 30);
-                } catch (imgError) {
-                    console.error("No se pudo cargar el logo para el PDF", imgError);
+                    doc.addImage(dataUrl, 'PNG', x, y, size, size);
+                } catch (err) {
+                    console.warn(err.message);
                 }
-            }
+            };
+
+            // 1. Logo Federación (Izquierda)
+            await addLogo('/assets/logos/federacion.png', 14, 10, 25);
+
+            // 2. Logo Equipo (Centro)
+            const teamLogoSlug = team.name.replace(/\s+/g, '-');
+            const localLogoUrl = `/assets/logos/${teamLogoSlug}.jpg`;
+            await addLogo(localLogoUrl, (pageWidth / 2) - 12.5, 10, 25);
+
+            // 3. Logo Liga (Derecha)
+            await addLogo('/assets/logos/logo-liga.jpg', pageWidth - 14 - 25, 10, 25);
 
             // Header
-            doc.setFontSize(22);
-            doc.text(`Reporte de Equipo: ${team.name}`, 14, 20);
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.text("LIGA DE VOLEIBOL DE COMAYAGUA", pageWidth / 2, 45, { align: 'center' });
+            
             doc.setFontSize(14);
-            doc.text(`Categoría: ${team.category}`, 14, 30);
-            doc.setFontSize(10);
-            doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 35);
+            doc.text("REPORTE OFICIAL DE RENDIMIENTO", pageWidth / 2, 53, { align: 'center' });
+            
+            // Info Box
+            doc.setDrawColor(200);
+            doc.line(14, 58, pageWidth - 14, 58);
+            
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Equipo: ${team.name}`, 14, 66);
+            doc.text(`Categoría: ${team.category}`, 14, 72);
+            doc.text(`Generado: ${new Date().toLocaleDateString()}`, pageWidth - 14, 66, { align: 'right' });
 
-            // Stats
-            doc.setFontSize(16);
-            doc.text("Estadísticas del Torneo", 14, 45);
+            // Stats Table
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.text("Estadísticas del Torneo", 14, 82);
 
             const statsData = [
-                ["Puntos", "PJ", "Ganados", "Perdidos", "Sets a Favor", "Sets en Contra"],
+                ["PJ", "PG", "PP", "Puntos", "Sets F", "Sets C"],
                 [
-                    teamStats?.points || 0,
                     teamStats?.pj || 0,
                     teamStats?.pg || 0,
                     teamStats?.pp || 0,
+                    teamStats?.points || 0,
                     teamStats?.setsFavor || 0,
                     teamStats?.setsAgainst || 0
                 ]
             ];
 
             autoTable(doc, {
-                startY: 50,
+                startY: 85,
                 head: [statsData[0]],
                 body: [statsData[1]],
                 theme: 'grid',
-                headStyles: { fillColor: [0, 51, 102] }
+                headStyles: { fillColor: [180, 0, 0], halign: 'center' },
+                styles: { halign: 'center', cellPadding: 3 }
             });
 
-            let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 80;
+            let finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 100;
 
-            // Players
-            doc.setFontSize(16);
+            // Players Table
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
             doc.text("Plantilla de Jugadores", 14, finalY + 15);
 
-            const playersData = teamPlayers.map(p => [
+            const playersData = teamPlayers.sort((a, b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0)).map((p, index) => [
+                index + 1,
                 p.number,
                 p.name,
                 p.position,
-                p.age || 'N/A',
                 p.idNumber || 'N/A',
-                p.status === 'active' ? 'Activo' : 'Suspendido'
+                p.status === 'inactive' ? 'Suspendido' : 'Activo'
             ]);
 
             autoTable(doc, {
                 startY: finalY + 20,
-                head: [["#", "Jugador", "Posición", "Edad", "Identidad", "Estado"]],
+                head: [["#", "Dorsal", "Jugador", "Posición", "Identidad", "Estado"]],
                 body: playersData,
                 theme: 'striped',
-                headStyles: { fillColor: [204, 0, 0] }
+                headStyles: { fillColor: [0, 51, 102], halign: 'center' },
+                columnStyles: {
+                    0: { cellWidth: 10, halign: 'center' },
+                    1: { cellWidth: 15, halign: 'center' },
+                    5: { cellWidth: 25, halign: 'center' }
+                },
+                styles: { fontSize: 9 }
             });
 
             doc.save(`Reporte_${team.name.replace(/\s+/g, '_')}.pdf`);

@@ -74,16 +74,17 @@ const Teams = () => {
     const generateRegistrationPDF = async (team) => {
         const teamPlayers = players.filter(p => p.teamId === team.id);
         const doc = jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
 
-        // Try to add logo
-        if (team.logoUrl) {
+        // Logo Helper Function
+        const addLogo = async (url, x, y, size = 25) => {
             try {
                 const img = new Image();
                 img.crossOrigin = "Anonymous";
-                img.src = team.logoUrl;
+                img.src = url;
                 await new Promise((resolve, reject) => {
                     img.onload = resolve;
-                    img.onerror = reject;
+                    img.onerror = () => reject(new Error(`No se pudo cargar: ${url}`));
                 });
 
                 const canvas = document.createElement('canvas');
@@ -92,26 +93,44 @@ const Teams = () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
                 const dataUrl = canvas.toDataURL('image/png');
-
-                doc.addImage(dataUrl, 'PNG', 160, 10, 30, 30);
-            } catch (imgError) {
-                console.error("No se pudo cargar el logo para el PDF", imgError);
+                doc.addImage(dataUrl, 'PNG', x, y, size, size);
+            } catch (err) {
+                console.warn(err.message);
             }
-        }
+        };
+
+        // 1. Logo Federación (Izquierda)
+        await addLogo('/assets/logos/federacion.png', 14, 10, 25);
+
+        // 2. Logo Equipo (Centro)
+        const teamLogoSlug = team.name.replace(/\s+/g, '-');
+        // Intentar cargar desde assets locales primero, luego URL de firestore
+        const localLogoUrl = `/assets/logos/${teamLogoSlug}.jpg`;
+        await addLogo(localLogoUrl, (pageWidth / 2) - 12.5, 10, 25);
+
+        // 3. Logo Liga (Derecha)
+        await addLogo('/assets/logos/logo-liga.jpg', pageWidth - 14 - 25, 10, 25);
 
         // Header
-        doc.setFontSize(20);
-        doc.text("FICHA DE INSCRIPCIÓN", 14, 20);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text("LIGA DE VOLEIBOL DE COMAYAGUA", pageWidth / 2, 45, { align: 'center' });
         
         doc.setFontSize(14);
-        doc.text(`Equipo: ${team.name}`, 14, 35);
-        doc.text(`Categoría: ${team.category}`, 14, 43);
-        doc.text(`Delegado: ${team.delegateName || 'N/A'}`, 14, 51);
+        doc.text("FICHA OFICIAL DE INSCRIPCIÓN", pageWidth / 2, 53, { align: 'center' });
         
-        doc.setFontSize(10);
-        doc.text(`Fecha de reporte: ${new Date().toLocaleDateString()}`, 14, 60);
+        // Info Box
+        doc.setDrawColor(200);
+        doc.line(14, 58, pageWidth - 14, 58);
+        
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Equipo: ${team.name}`, 14, 66);
+        doc.text(`Categoría: ${team.category}`, 14, 72);
+        doc.text(`Delegado: ${team.delegateName || 'N/A'}`, 14, 78);
+        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 14, 66, { align: 'right' });
 
-        const playersData = teamPlayers.map((p, index) => [
+        const playersData = teamPlayers.sort((a, b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0)).map((p, index) => [
             index + 1,
             p.number,
             p.name,
@@ -121,22 +140,32 @@ const Teams = () => {
         ]);
 
         autoTable(doc, {
-            startY: 65,
+            startY: 85,
             head: [["#", "Dorsal", "Nombre Completo", "Identidad", "Posición", "Estado"]],
             body: playersData,
             theme: 'grid',
-            headStyles: { fillColor: [0, 51, 102] },
-            styles: { fontSize: 9 }
+            headStyles: { fillColor: [0, 51, 102], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 15, halign: 'center' },
+                4: { cellWidth: 30 },
+                5: { cellWidth: 20, halign: 'center' }
+            },
+            styles: { fontSize: 9, cellPadding: 2 }
         });
 
-        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 100;
+        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 120;
+        
+        // Signatures
+        if (finalY + 40 > doc.internal.pageSize.getHeight()) doc.addPage();
+        const sigY = finalY + 25;
         
         doc.setFontSize(10);
-        doc.text("__________________________", 40, finalY + 30);
-        doc.text("Firma del Delegado", 45, finalY + 35);
+        doc.line(30, sigY, 80, sigY);
+        doc.text("Firma del Delegado", 55, sigY + 5, { align: 'center' });
         
-        doc.text("__________________________", 130, finalY + 30);
-        doc.text("Sello de la League", 140, finalY + 35);
+        doc.line(pageWidth - 80, sigY, pageWidth - 30, sigY);
+        doc.text("Sello de la Liga", pageWidth - 55, sigY + 5, { align: 'center' });
 
         doc.save(`Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
     };
