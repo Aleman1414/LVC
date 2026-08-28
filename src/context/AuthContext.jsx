@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const ADMIN_EMAILS = ['angel.alema1414@gmail.com'];
+    const ADMIN_EMAILS = ['angel.aleman1414@gmail.com', 'angel.alema1414@gmail.com'];
 
     async function login(email, password) {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -80,7 +80,6 @@ export function AuthProvider({ children }) {
                 const role = isAdminEmail ? 'admin' : (data.role || 'user');
                 setUserData({ ...data, role });
 
-                // Asegurar que en Supabase la columna role este en admin si es el mail admin
                 if (isAdminEmail && data.role !== 'admin') {
                     await supabase.from('profiles').update({ role: 'admin' }).eq('id', user.id);
                 }
@@ -88,7 +87,6 @@ export function AuthProvider({ children }) {
                 const role = isAdminEmail ? 'admin' : 'user';
                 setUserData({ role, email: user.email, full_name: user.user_metadata?.full_name || user.email });
 
-                // Upsert perfil inicial
                 await supabase.from('profiles').upsert({
                     id: user.id,
                     email: user.email,
@@ -104,7 +102,6 @@ export function AuthProvider({ children }) {
     }
 
     useEffect(() => {
-        // Obtenemos la sesión actual al montar
         supabase.auth.getSession().then(({ data: { session } }) => {
             const user = session?.user ?? null;
             setCurrentUser(user);
@@ -116,7 +113,6 @@ export function AuthProvider({ children }) {
             setLoading(false);
         });
 
-        // Escuchamos cambios de estado de autenticación
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             const user = session?.user ?? null;
             setCurrentUser(user);
