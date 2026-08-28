@@ -7,6 +7,7 @@ const ALLOWED_COLUMNS = {
     matches: ['id', 'team_a_id', 'team_b_id', 'date', 'time', 'location', 'status', 'score', 'round', 'league_id', 'created_at'],
     sanctions: ['id', 'player_id', 'team_id', 'type', 'reason', 'fine', 'date', 'status', 'league_id', 'created_at'],
     meetings: ['id', 'title', 'date', 'description', 'file_url', 'status', 'league_id', 'created_at'],
+    transfers: ['id', 'player_id', 'from_team_id', 'to_team_id', 'transfer_date', 'reason', 'status', 'league_id', 'created_at'],
     profiles: ['id', 'email', 'full_name', 'role', 'created_at']
 };
 
@@ -25,6 +26,9 @@ export function useSupabase(tableName, options = {}) {
         if (clean.photoUrl && !clean.photo_url) clean.photo_url = clean.photoUrl;
         if (clean.teamId && !clean.team_id) clean.team_id = clean.teamId;
         if (clean.playerId && !clean.player_id) clean.player_id = clean.playerId;
+        if (clean.fromTeamId && !clean.from_team_id) clean.from_team_id = clean.fromTeamId;
+        if (clean.toTeamId && !clean.to_team_id) clean.to_team_id = clean.toTeamId;
+        if (clean.transferDate && !clean.transfer_date) clean.transfer_date = clean.transferDate;
         if (clean.teamAId && !clean.team_a_id) clean.team_a_id = clean.teamAId;
         if (clean.teamBId && !clean.team_b_id) clean.team_b_id = clean.teamBId;
         if (clean.pdfUrl && !clean.file_url) clean.file_url = clean.pdfUrl;

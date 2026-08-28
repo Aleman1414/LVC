@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
 import TeamDetails from './pages/TeamDetails';
 import Players from './pages/Players';
+import Transfers from './pages/Transfers';
 import Matches from './pages/Matches';
 import Standings from './pages/Standings';
 import MatchScorer from './pages/MatchScorer';
@@ -37,6 +38,7 @@ function App() {
               <Route path="teams" element={<Teams />} />
               <Route path="teams/:id" element={<TeamDetails />} />
               <Route path="players" element={<Players />} />
+              <Route path="transfers" element={<Transfers />} />
               <Route path="matches" element={<Matches />} />
               <Route path="standings" element={<Standings />} />
               <Route path="scorer/:id" element={<MatchScorer />} />

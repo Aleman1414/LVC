@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
-import { Plus, Edit2, Trash2, User, Search, Filter, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Search, Filter, Layers, ArrowRightLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Players = () => {
     const { selectedLeague, currentLeagueObj } = useLeague();
@@ -64,6 +65,33 @@ const Players = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+
+        const normalizedName = (formData.name || '').trim().toLowerCase();
+
+        // 1. Validación de Duplicados: Verificar si el jugador ya existe en la lista
+        const existingPlayer = players.find(p =>
+            (p.name || '').trim().toLowerCase() === normalizedName &&
+            (!currentPlayer || p.id !== currentPlayer.id)
+        );
+
+        if (existingPlayer) {
+            const existingTeamId = existingPlayer.team_id || existingPlayer.teamId;
+            const existingTeam = teams.find(t => t.id === existingTeamId);
+            const teamName = existingTeam?.name || 'otro equipo';
+            setError(`⚠️ El jugador "${formData.name}" ya se encuentra registrado en el equipo "${teamName}". No se permiten jugadores duplicados ni pertenecer a múltiples equipos. Para cambiarlo de equipo debes utilizar el apartado de "Traspasos".`);
+            return;
+        }
+
+        // 2. Validación de Cambio de Equipo directo en edición
+        if (currentPlayer) {
+            const originalTeamId = currentPlayer.team_id || currentPlayer.teamId;
+            if (originalTeamId && formData.team_id && originalTeamId !== formData.team_id) {
+                setError(`⚠️ No está permitido cambiar a un jugador de equipo directamente en la edición. Para realizar una transferencia a otro equipo utiliza el apartado de "Traspasos".`);
+                return;
+            }
+        }
+
         try {
             let photo_url = currentPlayer?.photo_url || currentPlayer?.photoUrl || '';
             if (photoFile) {
@@ -71,14 +99,12 @@ const Players = () => {
             }
 
             const playerData = {
-                name: formData.name,
+                name: formData.name.trim(),
                 number: formData.number ? parseInt(formData.number, 10) : null,
                 position: formData.position,
                 status: formData.status,
                 team_id: formData.team_id || teams[0]?.id || null,
-                teamId: formData.team_id || teams[0]?.id || null,
                 photo_url: photo_url,
-                photoUrl: photo_url,
                 league_id: selectedLeague
             };
 
@@ -91,7 +117,7 @@ const Players = () => {
             setPhotoFile(null);
         } catch (err) {
             console.error("Error al guardar jugador:", err);
-            setError("Error al guardar el jugador.");
+            setError("Error al guardar el jugador. Inténtalo de nuevo.");
         }
     };
 
@@ -110,10 +136,16 @@ const Players = () => {
                         <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
                     </p>
                 </div>
-                <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
-                    <Plus size={18} />
-                    <span>Nuevo Jugador</span>
-                </button>
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
+                    <Link to="/transfers" className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-2">
+                        <ArrowRightLeft size={18} />
+                        <span>Ir a Traspasos</span>
+                    </Link>
+                    <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
+                        <Plus size={18} />
+                        <span>Nuevo Jugador</span>
+                    </button>
+                </div>
             </div>
 
             {/* Filtros y búsqueda */}
@@ -181,10 +213,10 @@ const Players = () => {
                                 </div>
 
                                 <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                                    <button onClick={() => handleOpenModal(player)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                    <button onClick={() => handleOpenModal(player)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Jugador">
                                         <Edit2 size={16} />
                                     </button>
-                                    <button onClick={() => deleteData(player.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                    <button onClick={() => deleteData(player.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Jugador">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -206,7 +238,7 @@ const Players = () => {
                             {currentPlayer ? 'Editar Jugador' : 'Nuevo Jugador'}
                         </h2>
 
-                        {error && <div className="p-3 bg-red-100 text-red-700 text-sm rounded-xl">{error}</div>}
+                        {error && <div className="p-3 bg-red-100 border border-red-300 text-red-700 text-sm rounded-xl">{error}</div>}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
@@ -222,18 +254,22 @@ const Players = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Equipo</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Equipo Pertenece</label>
                                 <select
                                     value={formData.team_id}
                                     onChange={(e) => setFormData({ ...formData, team_id: e.target.value })}
                                     className="input w-full"
                                     required
+                                    disabled={!!currentPlayer} // Bloquear cambio directo de equipo en edición
                                 >
                                     <option value="">Seleccionar Equipo</option>
                                     {teams.map(t => (
                                         <option key={t.id} value={t.id}>{t.name}</option>
                                     ))}
                                 </select>
+                                {currentPlayer && (
+                                    <p className="text-[11px] text-slate-400 mt-1">Para transferir a este jugador a otro equipo, utiliza el apartado de <strong>Traspasos</strong>.</p>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

@@ -10,7 +10,8 @@ import {
     FileText,
     Settings,
     ShieldAlert,
-    LogOut
+    LogOut,
+    ArrowRightLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LeagueSelector from './LeagueSelector';
@@ -34,6 +35,7 @@ const Navbar = () => {
         { name: 'Partidos', path: '/matches', icon: Calendar },
         { name: 'Equipos', path: '/teams', icon: ShieldAlert },
         { name: 'Jugadores', path: '/players', icon: Users },
+        { name: 'Traspasos', path: '/transfers', icon: ArrowRightLeft },
     ];
 
     if (userData?.role === 'admin') {
