@@ -69,8 +69,7 @@ const Teams = () => {
                 contact: formData.contact,
                 status: formData.status,
                 league_id: formData.league_id || selectedLeague,
-                logo_url: logo_url,
-                logoUrl: logo_url // for backwards compatibility
+                logo_url: logo_url
             };
 
             if (currentTeam) {

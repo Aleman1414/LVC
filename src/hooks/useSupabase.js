@@ -1,12 +1,57 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
+const ALLOWED_COLUMNS = {
+    teams: ['id', 'name', 'logo_url', 'foundation_date', 'delegate_name', 'contact', 'status', 'category', 'league_id', 'created_at'],
+    players: ['id', 'name', 'number', 'position', 'photo_url', 'status', 'team_id', 'league_id', 'created_at'],
+    matches: ['id', 'team_a_id', 'team_b_id', 'date', 'time', 'location', 'status', 'score', 'round', 'league_id', 'created_at'],
+    sanctions: ['id', 'player_id', 'team_id', 'type', 'reason', 'fine', 'date', 'status', 'league_id', 'created_at'],
+    meetings: ['id', 'title', 'date', 'description', 'file_url', 'status', 'league_id', 'created_at'],
+    profiles: ['id', 'email', 'full_name', 'role', 'created_at']
+};
+
 export function useSupabase(tableName, options = {}) {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const { leagueId, filterField = 'league_id' } = options;
+
+    const sanitizePayload = useCallback((payload) => {
+        const clean = { ...payload };
+
+        // Mapeos de compatibilidad camelCase -> snake_case
+        if (clean.logoUrl && !clean.logo_url) clean.logo_url = clean.logoUrl;
+        if (clean.photoUrl && !clean.photo_url) clean.photo_url = clean.photoUrl;
+        if (clean.teamId && !clean.team_id) clean.team_id = clean.teamId;
+        if (clean.playerId && !clean.player_id) clean.player_id = clean.playerId;
+        if (clean.teamAId && !clean.team_a_id) clean.team_a_id = clean.teamAId;
+        if (clean.teamBId && !clean.team_b_id) clean.team_b_id = clean.teamBId;
+        if (clean.pdfUrl && !clean.file_url) clean.file_url = clean.pdfUrl;
+
+        // Asignar league_id si aplica
+        if (leagueId && leagueId !== 'all' && !clean.league_id) {
+            clean.league_id = leagueId;
+        }
+
+        // Filtrar únicamente columnas válidas si la tabla está en ALLOWED_COLUMNS
+        const validColumns = ALLOWED_COLUMNS[tableName];
+        if (validColumns) {
+            const sanitized = {};
+            Object.keys(clean).forEach(key => {
+                if (validColumns.includes(key) && clean[key] !== undefined) {
+                    sanitized[key] = clean[key];
+                }
+            });
+            return sanitized;
+        }
+
+        // Eliminar valores undefined
+        Object.keys(clean).forEach(key => {
+            if (clean[key] === undefined) delete clean[key];
+        });
+        return clean;
+    }, [tableName, leagueId]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -33,7 +78,6 @@ export function useSupabase(tableName, options = {}) {
     useEffect(() => {
         fetchData();
 
-        // Subscripción en tiempo real con Supabase Channels
         const channel = supabase
             .channel(`public:${tableName}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
@@ -48,23 +92,17 @@ export function useSupabase(tableName, options = {}) {
 
     const addData = async (newData) => {
         try {
-            // Eliminar campos undefined
-            const clean = { ...newData };
-            Object.keys(clean).forEach(key => {
-                if (clean[key] === undefined) delete clean[key];
-            });
-
-            // Asignar league_id si aplica
-            if (leagueId && leagueId !== 'all' && !clean.league_id) {
-                clean.league_id = leagueId;
-            }
+            const clean = sanitizePayload(newData);
 
             const { data: inserted, error: insertErr } = await supabase
                 .from(tableName)
                 .insert([clean])
                 .select();
 
-            if (insertErr) throw insertErr;
+            if (insertErr) {
+                console.error(`Error de Supabase al insertar en ${tableName}:`, insertErr);
+                throw insertErr;
+            }
             await fetchData();
             return inserted?.[0];
         } catch (err) {
@@ -75,10 +113,8 @@ export function useSupabase(tableName, options = {}) {
 
     const updateData = async (id, updatedData) => {
         try {
-            const clean = { ...updatedData };
-            Object.keys(clean).forEach(key => {
-                if (clean[key] === undefined) delete clean[key];
-            });
+            const clean = sanitizePayload(updatedData);
+            delete clean.id;
 
             const { data: updated, error: updateErr } = await supabase
                 .from(tableName)
@@ -86,7 +122,10 @@ export function useSupabase(tableName, options = {}) {
                 .eq('id', id)
                 .select();
 
-            if (updateErr) throw updateErr;
+            if (updateErr) {
+                console.error(`Error de Supabase al actualizar en ${tableName}:`, updateErr);
+                throw updateErr;
+            }
             await fetchData();
             return updated?.[0];
         } catch (err) {
@@ -112,7 +151,6 @@ export function useSupabase(tableName, options = {}) {
 
     const uploadFile = async (file, path) => {
         try {
-            // Determinar bucket basado en path (logos, players, documents)
             let bucket = 'documents';
             if (path.startsWith('logos/')) bucket = 'logos';
             else if (path.startsWith('players/')) bucket = 'players';
@@ -142,5 +180,4 @@ export function useSupabase(tableName, options = {}) {
     return { data, loading, error, addData, updateData, deleteData, uploadFile, refetch: fetchData };
 }
 
-// Alias para compatibilidad con código existente
 export const useFirestore = useSupabase;
