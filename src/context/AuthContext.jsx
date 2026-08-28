@@ -12,6 +12,8 @@ export function AuthProvider({ children }) {
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const ADMIN_EMAILS = ['angel.alema1414@gmail.com'];
+
     async function login(email, password) {
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
@@ -22,13 +24,14 @@ export function AuthProvider({ children }) {
     }
 
     async function signup(email, password, fullName = '') {
+        const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     full_name: fullName,
-                    role: 'user'
+                    role: isAdmin ? 'admin' : 'user'
                 }
             }
         });
@@ -38,7 +41,10 @@ export function AuthProvider({ children }) {
 
     async function loginWithGoogle() {
         const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google'
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}`
+            }
         });
         if (error) throw error;
         return data;
@@ -55,21 +61,45 @@ export function AuthProvider({ children }) {
         return data;
     }
 
-    async function fetchUserProfile(userId) {
+    async function fetchUserProfile(user) {
+        if (!user) {
+            setUserData(null);
+            return;
+        }
+
+        const isAdminEmail = ADMIN_EMAILS.includes((user.email || '').toLowerCase());
+
         try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('id', userId)
+                .eq('id', user.id)
                 .single();
+
             if (data && !error) {
-                setUserData(data);
+                const role = isAdminEmail ? 'admin' : (data.role || 'user');
+                setUserData({ ...data, role });
+
+                // Asegurar que en Supabase la columna role este en admin si es el mail admin
+                if (isAdminEmail && data.role !== 'admin') {
+                    await supabase.from('profiles').update({ role: 'admin' }).eq('id', user.id);
+                }
             } else {
-                setUserData({ role: 'user' });
+                const role = isAdminEmail ? 'admin' : 'user';
+                setUserData({ role, email: user.email, full_name: user.user_metadata?.full_name || user.email });
+
+                // Upsert perfil inicial
+                await supabase.from('profiles').upsert({
+                    id: user.id,
+                    email: user.email,
+                    full_name: user.user_metadata?.full_name || user.email,
+                    role
+                });
             }
         } catch (err) {
             console.error('Error al obtener perfil:', err);
-            setUserData({ role: 'user' });
+            const role = isAdminEmail ? 'admin' : 'user';
+            setUserData({ role, email: user.email });
         }
     }
 
@@ -79,7 +109,7 @@ export function AuthProvider({ children }) {
             const user = session?.user ?? null;
             setCurrentUser(user);
             if (user) {
-                fetchUserProfile(user.id);
+                fetchUserProfile(user);
             } else {
                 setUserData(null);
             }
@@ -91,7 +121,7 @@ export function AuthProvider({ children }) {
             const user = session?.user ?? null;
             setCurrentUser(user);
             if (user) {
-                fetchUserProfile(user.id);
+                fetchUserProfile(user);
             } else {
                 setUserData(null);
             }
