@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Trophy } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
 
 const Register = () => {
     const [email, setEmail] = useState('');
@@ -25,15 +24,17 @@ const Register = () => {
         try {
             setError('');
             setLoading(true);
-            const { user } = await signup(email, password);
+            const data = await signup(email, password, displayName);
 
-            // Create user profile in Firestore
-            await setDoc(doc(db, 'users', user.uid), {
-                displayName,
-                email,
-                role: 'visitor', // Default role
-                createdAt: new Date().toISOString()
-            });
+            if (data?.user) {
+                // Upsert profile in Supabase profiles table
+                await supabase.from('profiles').upsert({
+                    id: data.user.id,
+                    email: email,
+                    full_name: displayName,
+                    role: 'user'
+                });
+            }
 
             navigate('/');
         } catch (err) {
@@ -65,7 +66,7 @@ const Register = () => {
                         <input
                             type="text"
                             required
-                            className="input-field"
+                            className="input w-full"
                             value={displayName}
                             onChange={(e) => setDisplayName(e.target.value)}
                         />
@@ -75,7 +76,7 @@ const Register = () => {
                         <input
                             type="email"
                             required
-                            className="input-field"
+                            className="input w-full"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -85,7 +86,7 @@ const Register = () => {
                         <input
                             type="password"
                             required
-                            className="input-field"
+                            className="input w-full"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -95,7 +96,7 @@ const Register = () => {
                         <input
                             type="password"
                             required
-                            className="input-field"
+                            className="input w-full"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                         />
@@ -104,14 +105,14 @@ const Register = () => {
                     <button
                         disabled={loading}
                         type="submit"
-                        className="w-full btn-primary py-3 font-semibold text-lg"
+                        className="w-full btn btn-primary py-3 font-semibold text-lg"
                     >
                         {loading ? 'Registrando...' : 'Registrarse'}
                     </button>
                 </form>
 
                 <div className="mt-6 text-center">
-                    <p className="text-slate-600">
+                    <p className="text-slate-600 text-sm">
                         ¿Ya tienes cuenta? <NavLink to="/login" className="text-secondary font-semibold hover:underline">Inicia Sesión</NavLink>
                     </p>
                 </div>

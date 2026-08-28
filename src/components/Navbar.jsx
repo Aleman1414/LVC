@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     History,
     Users,
@@ -13,7 +13,7 @@ import {
     LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import LeagueSelector from './LeagueSelector';
 
 const Navbar = () => {
     const { userData, logout } = useAuth();
@@ -45,18 +45,28 @@ const Navbar = () => {
     return (
         <>
             {/* Desktop Sidebar */}
-            <nav className="hidden md:flex flex-col w-64 bg-primary text-white h-screen sticky top-0">
-                <div className="p-6 text-2xl font-bold border-b border-primary-light flex items-center space-x-3">
-                    <img src="/logo.jpg" alt="LVC Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1" />
-                    <span>LVC</span>
+            <nav className="hidden md:flex flex-col w-64 bg-primary text-white h-screen sticky top-0 shadow-xl">
+                <div className="p-6 border-b border-primary-light flex flex-col space-y-4">
+                    <div className="flex items-center space-x-3">
+                        <img src="/logo.jpg" alt="LVC Logo" className="w-10 h-10 object-contain bg-white rounded-full p-1 shadow" />
+                        <div>
+                            <h1 className="text-xl font-extrabold tracking-wide">LVC</h1>
+                            <p className="text-[10px] text-slate-300">Voleibol Comayagua</p>
+                        </div>
+                    </div>
+                    {/* League Switcher in Desktop Sidebar */}
+                    <div className="pt-2">
+                        <LeagueSelector className="w-full" />
+                    </div>
                 </div>
-                <div className="flex-1 py-6 space-y-2">
+
+                <div className="flex-1 py-4 space-y-1 overflow-y-auto">
                     {navItems.map((item) => (
                         <NavLink
                             key={item.path}
                             to={item.path}
                             className={({ isActive }) =>
-                                `flex items-center space-x-3 px-6 py-3 transition-colors ${isActive ? 'bg-secondary text-white border-r-4 border-white' : 'hover:bg-primary-light text-slate-300'
+                                `flex items-center space-x-3 px-6 py-3 text-sm font-medium transition-colors ${isActive ? 'bg-secondary text-white border-r-4 border-white font-bold' : 'hover:bg-primary-light text-slate-300'
                                 }`
                             }
                         >
@@ -65,10 +75,11 @@ const Navbar = () => {
                         </NavLink>
                     ))}
                 </div>
+
                 <div className="p-4 border-t border-primary-light">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center space-x-3 px-6 py-3 w-full text-slate-300 hover:bg-primary-light hover:text-white transition-colors rounded-lg"
+                        className="flex items-center space-x-3 px-6 py-3 w-full text-slate-300 hover:bg-primary-light hover:text-white transition-colors rounded-lg text-sm"
                     >
                         <LogOut size={20} />
                         <span>Cerrar Sesión</span>
@@ -77,13 +88,13 @@ const Navbar = () => {
             </nav>
 
             {/* Mobile Bottom Nav */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden flex justify-around items-center h-16 z-50">
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden flex justify-around items-center h-16 z-50 shadow-2xl">
                 {navItems.slice(0, 5).map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
-                            `flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-secondary' : 'text-slate-500'
+                            `flex flex-col items-center justify-center w-full h-full transition-colors ${isActive ? 'text-secondary font-bold' : 'text-slate-500'
                             }`
                         }
                     >
@@ -95,16 +106,14 @@ const Navbar = () => {
 
             {/* Mobile Top Header */}
             <header className="md:hidden flex items-center justify-between px-4 h-16 bg-primary text-white sticky top-0 z-40 shadow-lg">
-                <div className="text-xl font-bold flex items-center space-x-2">
+                <div className="text-lg font-bold flex items-center space-x-2">
                     <img src="/logo.jpg" alt="LVC Logo" className="w-8 h-8 object-contain bg-white rounded-full p-1" />
                     <span>LVC</span>
                 </div>
-                <div className="flex items-center space-x-4">
-                    <NavLink to="/profile" className="text-white">
-                        <UserCircle size={28} />
-                    </NavLink>
-                    <button onClick={handleLogout} className="text-white">
-                        <LogOut size={24} />
+                <div className="flex items-center space-x-2">
+                    <LeagueSelector />
+                    <button onClick={handleLogout} className="text-white p-1" title="Cerrar Sesión">
+                        <LogOut size={20} />
                     </button>
                 </div>
             </header>

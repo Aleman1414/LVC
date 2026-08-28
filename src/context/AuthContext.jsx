@@ -1,14 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signOut,
-    sendPasswordResetEmail,
-    signInWithPopup
-} from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase/config';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
@@ -22,40 +13,92 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     async function login(email, password) {
-        return signInWithEmailAndPassword(auth, email, password);
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) throw error;
+        return data;
     }
 
-    async function signup(email, password) {
-        return createUserWithEmailAndPassword(auth, email, password);
+    async function signup(email, password, fullName = '') {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    role: 'user'
+                }
+            }
+        });
+        if (error) throw error;
+        return data;
     }
 
     async function loginWithGoogle() {
-        return signInWithPopup(auth, googleProvider);
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google'
+        });
+        if (error) throw error;
+        return data;
     }
 
-    function logout() {
-        return signOut(auth);
+    async function logout() {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
     }
 
-    function resetPassword(email) {
-        return sendPasswordResetEmail(auth, email);
+    async function resetPassword(email) {
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        return data;
+    }
+
+    async function fetchUserProfile(userId) {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+            if (data && !error) {
+                setUserData(data);
+            } else {
+                setUserData({ role: 'user' });
+            }
+        } catch (err) {
+            console.error('Error al obtener perfil:', err);
+            setUserData({ role: 'user' });
+        }
     }
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        // Obtenemos la sesión actual al montar
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user ?? null;
             setCurrentUser(user);
             if (user) {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                if (userDoc.exists()) {
-                    setUserData(userDoc.data());
-                }
+                fetchUserProfile(user.id);
             } else {
                 setUserData(null);
             }
             setLoading(false);
         });
 
-        return unsubscribe;
+        // Escuchamos cambios de estado de autenticación
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const user = session?.user ?? null;
+            setCurrentUser(user);
+            if (user) {
+                fetchUserProfile(user.id);
+            } else {
+                setUserData(null);
+            }
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const value = {

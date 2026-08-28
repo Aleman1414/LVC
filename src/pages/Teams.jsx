@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useFirestore } from '../hooks/useFirestore';
-import { Plus, Edit2, Trash2, Trophy, Eye, FileText, Download } from 'lucide-react';
+import { useSupabase } from '../hooks/useSupabase';
+import { useLeague } from '../context/LeagueContext';
+import { Plus, Edit2, Trash2, Trophy, Eye, FileText, Download, Layers } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const Teams = () => {
-    const { data: teams, loading: teamsLoading, addData, updateData, deleteData, uploadFile } = useFirestore('teams');
-    const { data: players, loading: playersLoading } = useFirestore('players');
+    const { selectedLeague, currentLeagueObj, leagues } = useLeague();
+    const { data: teams, loading: teamsLoading, addData, updateData, deleteData, uploadFile } = useSupabase('teams', { leagueId: selectedLeague });
+    const { data: players, loading: playersLoading } = useSupabase('players', { leagueId: selectedLeague });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentTeam, setCurrentTeam] = useState(null);
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         name: '',
         category: 'Masculino',
-        foundationDate: '',
-        delegateName: '',
+        foundation_date: '',
+        delegate_name: '',
         contact: '',
-        status: 'active'
+        status: 'active',
+        league_id: selectedLeague
     });
     const [logoFile, setLogoFile] = useState(null);
 
@@ -29,20 +32,22 @@ const Teams = () => {
             setFormData({
                 name: team.name || '',
                 category: team.category || 'Masculino',
-                foundationDate: team.foundationDate || '',
-                delegateName: team.delegateName || '',
+                foundation_date: team.foundation_date || team.foundationDate || '',
+                delegate_name: team.delegate_name || team.delegateName || '',
                 contact: team.contact || '',
-                status: team.status || 'active'
+                status: team.status || 'active',
+                league_id: team.league_id || selectedLeague
             });
         } else {
             setCurrentTeam(null);
             setFormData({
                 name: '',
                 category: 'Masculino',
-                foundationDate: '',
-                delegateName: '',
+                foundation_date: '',
+                delegate_name: '',
                 contact: '',
-                status: 'active'
+                status: 'active',
+                league_id: selectedLeague
             });
         }
         setIsModalOpen(true);
@@ -51,12 +56,22 @@ const Teams = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            let logoUrl = currentTeam?.logoUrl || '';
+            let logo_url = currentTeam?.logo_url || currentTeam?.logoUrl || '';
             if (logoFile) {
-                logoUrl = await uploadFile(logoFile, `logos/${Date.now()}_${logoFile.name}`);
+                logo_url = await uploadFile(logoFile, `logos/${Date.now()}_${logoFile.name}`);
             }
 
-            const teamData = { ...formData, logoUrl };
+            const teamData = {
+                name: formData.name,
+                category: formData.category,
+                foundation_date: formData.foundation_date,
+                delegate_name: formData.delegate_name,
+                contact: formData.contact,
+                status: formData.status,
+                league_id: formData.league_id || selectedLeague,
+                logo_url: logo_url,
+                logoUrl: logo_url // for backwards compatibility
+            };
 
             if (currentTeam) {
                 await updateData(currentTeam.id, teamData);
@@ -66,17 +81,16 @@ const Teams = () => {
             setIsModalOpen(false);
             setLogoFile(null);
         } catch (err) {
-            console.error("Error saving team:", err);
-            setError("Error al guardar el equipo. Posiblemente no tengas permisos de Administrador.");
+            console.error("Error al guardar equipo:", err);
+            setError("Error al guardar el equipo.");
         }
     };
-    
+
     const generateRegistrationPDF = async (team) => {
-        const teamPlayers = players.filter(p => p.teamId === team.id);
+        const teamPlayers = players.filter(p => (p.team_id || p.teamId) === team.id);
         const doc = jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
 
-        // Logo Helper Function
         const addLogo = async (url, x, y, size = 25) => {
             try {
                 const img = new Image();
@@ -99,228 +113,249 @@ const Teams = () => {
             }
         };
 
-        // 1. Logo Federación (Izquierda)
-        await addLogo('/assets/logos/federacion.png', 14, 10, 25);
+        await addLogo('/logo.jpg', 14, 10, 22);
+        const logoUrl = team.logo_url || team.logoUrl;
+        if (logoUrl) {
+            await addLogo(logoUrl, pageWidth - 36, 10, 22);
+        }
 
-        // 2. Logo Equipo (Centro)
-        const teamLogoSlug = team.name.replace(/\s+/g, '-');
-        // Intentar cargar desde assets locales primero, luego URL de firestore
-        const localLogoUrl = `/assets/logos/${teamLogoSlug}.jpg`;
-        await addLogo(localLogoUrl, (pageWidth / 2) - 12.5, 10, 25);
-
-        // 3. Logo Liga (Derecha)
-        await addLogo('/assets/logos/logo-liga.jpg', pageWidth - 14 - 25, 10, 25);
-
-        // Header
         doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text("LIGA DE VOLEIBOL DE COMAYAGUA", pageWidth / 2, 45, { align: 'center' });
-        
-        doc.setFontSize(14);
-        doc.text("FICHA OFICIAL DE INSCRIPCIÓN", pageWidth / 2, 53, { align: 'center' });
-        
-        // Info Box
-        doc.setDrawColor(200);
-        doc.line(14, 58, pageWidth - 14, 58);
-        
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Equipo: ${team.name}`, 14, 66);
-        doc.text(`Categoría: ${team.category}`, 14, 72);
-        doc.text(`Delegado: ${team.delegateName || 'N/A'}`, 14, 78);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 14, 66, { align: 'right' });
+        doc.setTextColor(15, 23, 42);
+        doc.text("HOJA DE INSCRIPCIÓN DE EQUIPO", pageWidth / 2, 18, { align: "center" });
 
-        const playersData = teamPlayers.sort((a, b) => (parseInt(a.number) || 0) - (parseInt(b.number) || 0)).map((p, index) => [
+        doc.setFontSize(12);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`Liga: ${currentLeagueObj?.name || 'LVC'}`, pageWidth / 2, 25, { align: "center" });
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Generado el: ${new Date().toLocaleDateString('es-HN')}`, pageWidth / 2, 31, { align: "center" });
+
+        doc.setFontSize(11);
+        doc.setTextColor(0);
+        doc.text(`Nombre del Equipo: ${team.name}`, 14, 42);
+        doc.text(`Categoría: ${team.category || 'N/A'}`, 14, 48);
+        doc.text(`Delegado: ${team.delegate_name || team.delegateName || 'N/A'}`, 120, 42);
+        doc.text(`Contacto: ${team.contact || 'N/A'}`, 120, 48);
+
+        const tableColumn = ["#", "Nombre del Jugador", "Posición", "Núm", "Estado"];
+        const tableRows = teamPlayers.map((p, index) => [
             index + 1,
-            p.number,
             p.name,
-            p.idNumber || 'N/A',
-            p.position,
-            p.status === 'inactive' ? 'Inactivo' : 'Activo'
+            p.position || 'N/A',
+            p.number || 'N/A',
+            p.status === 'active' ? 'Activo' : 'Inactivo'
         ]);
 
         autoTable(doc, {
-            startY: 85,
-            head: [["#", "Dorsal", "Nombre Completo", "Identidad", "Posición", "Estado"]],
-            body: playersData,
+            startY: 55,
+            head: [tableColumn],
+            body: tableRows,
             theme: 'grid',
-            headStyles: { fillColor: [0, 51, 102], halign: 'center' },
-            columnStyles: {
-                0: { cellWidth: 10, halign: 'center' },
-                1: { cellWidth: 15, halign: 'center' },
-                4: { cellWidth: 30 },
-                5: { cellWidth: 20, halign: 'center' }
-            },
-            styles: { fontSize: 9, cellPadding: 2 }
+            headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] },
+            styles: { fontSize: 9 }
         });
 
-        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 120;
-        
-        // Signatures
-        if (finalY + 40 > doc.internal.pageSize.getHeight()) doc.addPage();
-        const sigY = finalY + 25;
-        
-        doc.setFontSize(10);
-        doc.line(30, sigY, 80, sigY);
-        doc.text("Firma del Delegado", 55, sigY + 5, { align: 'center' });
-        
-        doc.line(pageWidth - 80, sigY, pageWidth - 30, sigY);
-        doc.text("Sello de la Liga", pageWidth - 55, sigY + 5, { align: 'center' });
-
-        doc.save(`Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
+        doc.save(`Ficha_Inscripcion_${team.name.replace(/\s+/g, '_')}.pdf`);
     };
 
     const exportToExcel = () => {
-        const wb = XLSX.utils.book_new();
-        
-        teams.forEach(team => {
-            const teamPlayers = players.filter(p => p.teamId === team.id);
-            const data = teamPlayers.map((p, index) => ({
-                '#': index + 1,
-                'Dorsal': p.number,
-                'Nombre Completo': p.name,
-                'Identidad': p.idNumber || 'N/A',
-                'Posición': p.position,
-                'Estado': p.status === 'inactive' ? 'Inactivo' : 'Activo'
-            }));
-            
-            const ws = XLSX.utils.json_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, team.name.substring(0, 31));
+        const dataToExport = teams.map(t => {
+            const teamPlayers = players.filter(p => (p.team_id || p.teamId) === t.id);
+            return {
+                'Nombre del Equipo': t.name,
+                'Liga': currentLeagueObj?.name || 'LVC',
+                'Categoría': t.category,
+                'Delegado': t.delegate_name || t.delegateName || '',
+                'Contacto': t.contact || '',
+                'Total Jugadores': teamPlayers.length,
+                'Estado': t.status
+            };
         });
-        
-        XLSX.writeFile(wb, `Inscripciones_LVC_${new Date().getFullYear()}.xlsx`);
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Equipos");
+        XLSX.writeFile(workbook, `Equipos_${currentLeagueObj?.slug || 'LVC'}.xlsx`);
     };
 
-    if (teamsLoading || playersLoading) return <div>Cargando equipos...</div>;
+    if (teamsLoading || playersLoading) return <div className="p-8 text-center text-slate-500">Cargando equipos...</div>;
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-primary">Equipos</h1>
-                <div className="flex space-x-3">
-                    <button onClick={exportToExcel} className="btn-secondary flex items-center space-x-2">
-                        <Download size={20} />
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-primary flex items-center space-x-2">
+                        <Trophy className="text-secondary" />
+                        <span>Equipos</span>
+                    </h1>
+                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
+                        <Layers size={14} className="text-slate-400" />
+                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                    </p>
+                </div>
+                <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <button onClick={exportToExcel} className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-2">
+                        <Download size={18} />
                         <span>Exportar Excel</span>
                     </button>
-                    <button onClick={() => handleOpenModal()} className="btn-primary flex items-center space-x-2">
-                        <Plus size={20} />
+                    <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
+                        <Plus size={18} />
                         <span>Nuevo Equipo</span>
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {teams.map((team) => (
-                    <div key={team.id} className="card flex flex-col items-center text-center">
-                        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-4 overflow-hidden border-2 border-primary-light">
-                            {team.logoUrl ? (
-                                <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" />
-                            ) : (
-                                <Trophy size={40} className="text-slate-400" />
-                            )}
-                        </div>
-                        <h3 className="text-xl font-bold">{team.name}</h3>
-                        <p className="text-slate-500 mb-4">{team.category}</p>
-                        <div className="flex space-x-2 mt-auto">
-                            <Link
-                                to={`/teams/${team.id}`}
-                                className="p-2 text-blue-500 hover:bg-slate-100 rounded-full transition-colors"
-                                title="Ver Reporte"
-                            >
-                                <Eye size={18} />
-                            </Link>
-                            <button
-                                onClick={() => generateRegistrationPDF(team)}
-                                className="p-2 text-green-600 hover:bg-slate-100 rounded-full transition-colors"
-                                title="Inscripción (PDF)"
-                            >
-                                <FileText size={18} />
-                            </button>
-                            <button
-                                onClick={() => handleOpenModal(team)}
-                                className="p-2 text-primary hover:bg-slate-100 rounded-full transition-colors"
-                                title="Editar"
-                            >
-                                <Edit2 size={18} />
-                            </button>
-                            <button
-                                onClick={() => deleteData(team.id)}
-                                className="p-2 text-secondary hover:bg-slate-100 rounded-full transition-colors"
-                                title="Eliminar"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {teams.length > 0 ? (
+                    teams.map((team) => {
+                        const teamPlayersCount = players.filter(p => (p.team_id || p.teamId) === team.id).length;
+                        const logo = team.logo_url || team.logoUrl;
+                        return (
+                            <div key={team.id} className="card hover:shadow-xl transition-all border border-slate-100 flex flex-col justify-between">
+                                <div>
+                                    <div className="flex items-center space-x-4 mb-4">
+                                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border border-slate-200 shrink-0">
+                                            {logo ? (
+                                                <img src={logo} alt={team.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Trophy size={28} className="text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-800">{team.name}</h2>
+                                            <span className="inline-block bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-medium mt-1">
+                                                {team.category || 'Categoría Única'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 text-sm text-slate-600 mb-6 bg-slate-50 p-3 rounded-xl">
+                                        <p><strong className="text-slate-700">Delegado:</strong> {team.delegate_name || team.delegateName || 'No asignado'}</p>
+                                        <p><strong className="text-slate-700">Contacto:</strong> {team.contact || 'No especificado'}</p>
+                                        <p><strong className="text-slate-700">Jugadores registrados:</strong> <span className="font-bold text-primary">{teamPlayersCount}</span></p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                    <div className="flex items-center space-x-2">
+                                        <Link to={`/teams/${team.id}`} className="p-2 text-slate-500 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Ver Detalles">
+                                            <Eye size={18} />
+                                        </Link>
+                                        <button onClick={() => generateRegistrationPDF(team)} className="p-2 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Descargar Ficha PDF">
+                                            <FileText size={18} />
+                                        </button>
+                                        <button onClick={() => handleOpenModal(team)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Equipo">
+                                            <Edit2 size={18} />
+                                        </button>
+                                    </div>
+                                    <button onClick={() => deleteData(team.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Equipo">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div className="col-span-full card text-center py-12 text-slate-400">
+                        No hay equipos registrados en la {currentLeagueObj?.name}. Haz clic en "Nuevo Equipo" para registrar el primero.
                     </div>
-                ))}
+                )}
             </div>
 
-            {/* Basic Modal Implementation */}
+            {/* Modal de Crear / Editar Equipo */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
-                    <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-2xl font-bold mb-4">{currentTeam ? 'Editar Equipo' : 'Nuevo Equipo'}</h2>
-                        
-                        {error && (
-                            <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 mb-4 text-sm rounded flex items-center justify-between">
-                                <span>{error}</span>
-                                <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
-                            </div>
-                        )}
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h2 className="text-2xl font-bold text-primary">
+                            {currentTeam ? 'Editar Equipo' : 'Nuevo Equipo'}
+                        </h2>
+
+                        {error && <div className="p-3 bg-red-100 text-red-700 text-sm rounded-xl">{error}</div>}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">Nombre</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Equipo</label>
                                 <input
                                     type="text"
                                     required
-                                    className="input-field"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="Ej: Warriors LVC"
                                 />
                             </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">Categoría</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Liga Pertenece</label>
                                 <select
-                                    className="input-field"
-                                    value={formData.category}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                    value={formData.league_id}
+                                    onChange={(e) => setFormData({ ...formData, league_id: e.target.value })}
+                                    className="input w-full"
                                 >
-                                    <option>Masculino</option>
-                                    <option>Femenino</option>
-                                    <option>Mixto</option>
+                                    {leagues.map(l => (
+                                        <option key={l.id || l.slug} value={l.id || l.slug}>{l.name}</option>
+                                    ))}
                                 </select>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
+                                    <select
+                                        value={formData.category}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                        className="input w-full"
+                                    >
+                                        <option value="Masculino">Masculino</option>
+                                        <option value="Femenino">Femenino</option>
+                                        <option value="Mixto">Mixto</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Contacto / Teléfono</label>
+                                    <input
+                                        type="text"
+                                        value={formData.contact}
+                                        onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                                        className="input w-full"
+                                        placeholder="+504 9999-9999"
+                                    />
+                                </div>
+                            </div>
+
                             <div>
-                                <label className="block text-sm font-medium mb-1">Logo</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Delegado</label>
+                                <input
+                                    type="text"
+                                    value={formData.delegate_name}
+                                    onChange={(e) => setFormData({ ...formData, delegate_name: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="Nombre del encargado"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Logo del Equipo</label>
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    className="input-field"
                                     onChange={(e) => setLogoFile(e.target.files[0])}
+                                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Delegado</label>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    value={formData.delegateName}
-                                    onChange={(e) => setFormData({ ...formData, delegateName: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Contacto</label>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    value={formData.contact}
-                                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                                />
-                            </div>
-                            <div className="flex space-x-3 pt-4">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50">Cancelar</button>
-                                <button type="submit" className="flex-1 btn-primary">Guardar</button>
+
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="btn border border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    {currentTeam ? 'Guardar Cambios' : 'Crear Equipo'}
+                                </button>
                             </div>
                         </form>
                     </div>

@@ -3,7 +3,7 @@ export const calculateStandings = (matches, teams) => {
         acc[team.id] = {
             teamId: team.id,
             teamName: team.name,
-            logoUrl: team.logoUrl,
+            logoUrl: team.logo_url || team.logoUrl,
             category: team.category,
             pj: 0, pg: 0, pp: 0,
             setsFavor: 0, setsAgainst: 0,
@@ -13,9 +13,11 @@ export const calculateStandings = (matches, teams) => {
     }, {});
 
     matches.filter(m => m.status === 'finished').forEach(match => {
-        const { teamAId, teamBId, score } = match;
-        const setsA = Number(score?.setsA || 0);
-        const setsB = Number(score?.setsB || 0);
+        const teamAId = match.team_a_id || match.teamAId;
+        const teamBId = match.team_b_id || match.teamBId;
+        const score = match.score || {};
+        const setsA = Number(score?.setsA ?? score?.sets_a ?? 0);
+        const setsB = Number(score?.setsB ?? score?.sets_b ?? 0);
 
         if (standings[teamAId]) {
             standings[teamAId].pj += 1;
@@ -23,7 +25,7 @@ export const calculateStandings = (matches, teams) => {
             standings[teamAId].setsAgainst += setsB;
             if (setsA > setsB) {
                 standings[teamAId].pg += 1;
-                standings[teamAId].points += (setsA === 3 && setsB < 2) ? 3 : 2; // Simple points system
+                standings[teamAId].points += (setsA === 3 && setsB < 2) ? 3 : 2;
             } else {
                 standings[teamAId].pp += 1;
                 standings[teamAId].points += (setsB === 3 && setsA === 2) ? 1 : 0;

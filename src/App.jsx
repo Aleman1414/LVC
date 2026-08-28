@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LeagueProvider } from './context/LeagueContext';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -18,41 +19,43 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 
-// Placeholder (to be implemented)
+// Placeholder
 const Stats = () => <div className="card"><h1>Estadísticas</h1></div>;
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+      <LeagueProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="teams" element={<Teams />} />
-            <Route path="teams/:id" element={<TeamDetails />} />
-            <Route path="players" element={<Players />} />
-            <Route path="matches" element={<Matches />} />
-            <Route path="standings" element={<Standings />} />
-            <Route path="scorer/:id" element={<MatchScorer />} />
-            <Route path="sanctions" element={<Sanctions />} />
-            <Route path="meetings" element={<Meetings />} />
-            <Route path="stats" element={<Stats />} />
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="teams" element={<Teams />} />
+              <Route path="teams/:id" element={<TeamDetails />} />
+              <Route path="players" element={<Players />} />
+              <Route path="matches" element={<Matches />} />
+              <Route path="standings" element={<Standings />} />
+              <Route path="scorer/:id" element={<MatchScorer />} />
+              <Route path="sanctions" element={<Sanctions />} />
+              <Route path="meetings" element={<Meetings />} />
+              <Route path="stats" element={<Stats />} />
 
-            <Route
-              path="admin"
-              element={
-                <PrivateRoute roles={['admin']}>
-                  <div className="card"><h1>Panel Admin</h1></div>
-                </PrivateRoute>
-              }
-            />
-          </Route>
-        </Routes>
-      </Router>
+              <Route
+                path="admin"
+                element={
+                  <PrivateRoute roles={['admin']}>
+                    <div className="card"><h1>Panel Admin</h1></div>
+                  </PrivateRoute>
+                }
+              />
+            </Route>
+          </Routes>
+        </Router>
+      </LeagueProvider>
     </AuthProvider>
   );
 }
