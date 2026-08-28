@@ -119,30 +119,14 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Políticas RLS
-ALTER TABLE public.leagues ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sanctions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meetings ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Permitir lectura publica de ligas" ON public.leagues FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de perfiles" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de equipos" ON public.teams FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de jugadores" ON public.players FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de partidos" ON public.matches FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de sanciones" ON public.sanctions FOR SELECT USING (true);
-CREATE POLICY "Permitir lectura publica de reuniones" ON public.meetings FOR SELECT USING (true);
-
-CREATE POLICY "Permitir escrituras a usuarios autenticados en ligas" ON public.leagues FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en perfiles" ON public.profiles FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en equipos" ON public.teams FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en jugadores" ON public.players FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en partidos" ON public.matches FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en sanciones" ON public.sanctions FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Permitir escrituras a usuarios autenticados en reuniones" ON public.meetings FOR ALL USING (auth.role() = 'authenticated');
+-- Políticas de lectura y escritura públicas (para fácil gestión de datos)
+CREATE POLICY "Permitir acceso total a ligas" ON public.leagues FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a perfiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a equipos" ON public.teams FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a jugadores" ON public.players FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a partidos" ON public.matches FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a sanciones" ON public.sanctions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir acceso total a reuniones" ON public.meetings FOR ALL USING (true) WITH CHECK (true);
 
 -- Buckets de Storage
 INSERT INTO storage.buckets (id, name, public) 
@@ -153,6 +137,6 @@ CREATE POLICY "Lectura publica de storage logos" ON storage.objects FOR SELECT U
 CREATE POLICY "Lectura publica de storage players" ON storage.objects FOR SELECT USING (bucket_id = 'players');
 CREATE POLICY "Lectura publica de storage documents" ON storage.objects FOR SELECT USING (bucket_id = 'documents');
 
-CREATE POLICY "Escritura autenticada en storage logos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'logos' AND auth.role() = 'authenticated');
-CREATE POLICY "Escritura autenticada en storage players" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'players' AND auth.role() = 'authenticated');
-CREATE POLICY "Escritura autenticada en storage documents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'documents' AND auth.role() = 'authenticated');
+CREATE POLICY "Escritura publica en storage logos" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'logos');
+CREATE POLICY "Escritura publica en storage players" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'players');
+CREATE POLICY "Escritura publica en storage documents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'documents');
