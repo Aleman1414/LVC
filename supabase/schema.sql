@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS public.teams (
 CREATE TABLE IF NOT EXISTS public.players (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    dni TEXT,
     number INTEGER,
     position TEXT,
     photo_url TEXT,
@@ -59,6 +60,11 @@ CREATE TABLE IF NOT EXISTS public.players (
     league_id UUID REFERENCES public.leagues(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Índice único para DNI (evita duplicados si tiene valor asignado)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_players_dni_unique 
+ON public.players (dni) 
+WHERE dni IS NOT NULL AND dni <> '';
 
 -- 5. TABLA DE PARTIDOS
 CREATE TABLE IF NOT EXISTS public.matches (

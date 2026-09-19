@@ -212,7 +212,9 @@ const Transfers = () => {
                                         const pTeamId = p.team_id || p.teamId;
                                         const pTeam = teams.find(t => t.id === pTeamId);
                                         return (
-                                            <option key={p.id} value={p.id}>{p.name} ({pTeam?.name || 'Sin equipo'})</option>
+                                            <option key={p.id} value={p.id}>
+                                                {p.name} {p.dni ? `[DNI: ${p.dni}]` : ''} ({pTeam?.name || 'Sin equipo'})
+                                            </option>
                                         );
                                     })}
                                 </select>

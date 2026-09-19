@@ -17,21 +17,23 @@ const Players = () => {
 
     const [formData, setFormData] = useState({
         name: '',
+        dni: '',
         number: '',
         position: 'Universal',
         age: '',
-        idNumber: '',
         status: 'active',
         team_id: ''
     });
     const [photoFile, setPhotoFile] = useState(null);
 
     const filteredPlayers = useMemo(() => {
+        const query = searchTerm.toLowerCase().trim();
         return players.filter(player => {
-            const matchesSearch = (player.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesName = (player.name || '').toLowerCase().includes(query);
+            const matchesDni = (player.dni || '').toLowerCase().includes(query);
             const playerTeamId = player.team_id || player.teamId;
             const matchesTeam = filterTeam === 'all' || playerTeamId === filterTeam;
-            return matchesSearch && matchesTeam;
+            return (matchesName || matchesDni) && matchesTeam;
         });
     }, [players, searchTerm, filterTeam]);
 
@@ -41,10 +43,10 @@ const Players = () => {
             setCurrentPlayer(player);
             setFormData({
                 name: player.name || '',
-                number: player.number || '',
+                dni: player.dni || '',
+                number: player.number !== null && player.number !== undefined ? player.number : '',
                 position: player.position || 'Universal',
                 age: player.age || '',
-                idNumber: player.id_number || player.idNumber || '',
                 status: player.status || 'active',
                 team_id: player.team_id || player.teamId || ''
             });
@@ -52,10 +54,10 @@ const Players = () => {
             setCurrentPlayer(null);
             setFormData({
                 name: '',
+                dni: '',
                 number: '',
                 position: 'Universal',
                 age: '',
-                idNumber: '',
                 status: 'active',
                 team_id: teams[0]?.id || ''
             });
@@ -68,22 +70,39 @@ const Players = () => {
         setError('');
 
         const normalizedName = (formData.name || '').trim().toLowerCase();
+        const normalizedDni = (formData.dni || '').trim().toLowerCase();
 
-        // 1. Validación de Duplicados: Verificar si el jugador ya existe en la lista
-        const existingPlayer = players.find(p =>
+        // 1. Validación de Duplicados por Nombre
+        const existingPlayerByName = players.find(p =>
             (p.name || '').trim().toLowerCase() === normalizedName &&
             (!currentPlayer || p.id !== currentPlayer.id)
         );
 
-        if (existingPlayer) {
-            const existingTeamId = existingPlayer.team_id || existingPlayer.teamId;
+        if (existingPlayerByName) {
+            const existingTeamId = existingPlayerByName.team_id || existingPlayerByName.teamId;
             const existingTeam = teams.find(t => t.id === existingTeamId);
             const teamName = existingTeam?.name || 'otro equipo';
             setError(`⚠️ El jugador "${formData.name}" ya se encuentra registrado en el equipo "${teamName}". No se permiten jugadores duplicados ni pertenecer a múltiples equipos. Para cambiarlo de equipo debes utilizar el apartado de "Traspasos".`);
             return;
         }
 
-        // 2. Validación de Cambio de Equipo directo en edición
+        // 2. Validación de Duplicados por DNI (si se ingresó)
+        if (normalizedDni) {
+            const existingPlayerByDni = players.find(p =>
+                (p.dni || '').trim().toLowerCase() === normalizedDni &&
+                (!currentPlayer || p.id !== currentPlayer.id)
+            );
+
+            if (existingPlayerByDni) {
+                const existingTeamId = existingPlayerByDni.team_id || existingPlayerByDni.teamId;
+                const existingTeam = teams.find(t => t.id === existingTeamId);
+                const teamName = existingTeam?.name || 'otro equipo';
+                setError(`⚠️ El DNI "${formData.dni}" ya pertenece al jugador registrado "${existingPlayerByDni.name}" en el equipo "${teamName}".`);
+                return;
+            }
+        }
+
+        // 3. Validación de Cambio de Equipo directo en edición
         if (currentPlayer) {
             const originalTeamId = currentPlayer.team_id || currentPlayer.teamId;
             if (originalTeamId && formData.team_id && originalTeamId !== formData.team_id) {
@@ -100,7 +119,8 @@ const Players = () => {
 
             const playerData = {
                 name: formData.name.trim(),
-                number: formData.number ? parseInt(formData.number, 10) : null,
+                dni: formData.dni.trim() || null,
+                number: formData.number !== '' ? parseInt(formData.number, 10) : null,
                 position: formData.position,
                 status: formData.status,
                 team_id: formData.team_id || teams[0]?.id || null,
@@ -154,7 +174,7 @@ const Players = () => {
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Buscar por nombre..."
+                        placeholder="Buscar por nombre o DNI..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="input w-full pl-10"
@@ -194,9 +214,18 @@ const Players = () => {
                                                 <User size={28} className="text-slate-400" />
                                             )}
                                         </div>
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                             <h2 className="text-lg font-bold text-slate-800 line-clamp-1">{player.name}</h2>
-                                            <p className="text-xs text-primary font-semibold">{team?.name || 'Sin equipo'}</p>
+                                            <p className="text-xs text-primary font-semibold truncate">{team?.name || 'Sin equipo'}</p>
+                                            {player.dni ? (
+                                                <span className="inline-block mt-1 text-[11px] font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                                    DNI: {player.dni}
+                                                </span>
+                                            ) : (
+                                                <span className="inline-block mt-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                                    Sin DNI
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -233,7 +262,7 @@ const Players = () => {
             {/* Modal Crear / Editar Jugador */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold text-primary">
                             {currentPlayer ? 'Editar Jugador' : 'Nuevo Jugador'}
                         </h2>
@@ -251,6 +280,21 @@ const Players = () => {
                                     className="input w-full"
                                     placeholder="Nombre y Apellido"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between items-center">
+                                    <span>DNI (Documento de Identificación)</span>
+                                    <span className="text-[11px] text-slate-400 font-normal">Opcional</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.dni}
+                                    onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
+                                    className="input w-full font-mono text-sm"
+                                    placeholder="Ej: 0301-1998-12345"
+                                />
+                                <p className="text-[11px] text-slate-400 mt-1">Identificador único para evitar duplicados en la liga.</p>
                             </div>
 
                             <div>
