@@ -137,12 +137,11 @@ const Teams = () => {
         doc.text(`Delegado: ${team.delegate_name || team.delegateName || 'N/A'}`, 120, 42);
         doc.text(`Contacto: ${team.contact || 'N/A'}`, 120, 48);
 
-        const tableColumn = ["#", "Nombre del Jugador", "Posición", "Núm", "Estado"];
+        const tableColumn = ["#", "Nombre del Jugador", "DNI", "Estado"];
         const tableRows = teamPlayers.map((p, index) => [
             index + 1,
             p.name,
-            p.position || 'N/A',
-            p.number || 'N/A',
+            p.dni || 'N/A',
             p.status === 'active' ? 'Activo' : 'Inactivo'
         ]);
 

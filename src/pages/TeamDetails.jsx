@@ -63,13 +63,11 @@ const TeamDetails = () => {
             doc.setFontSize(10);
             doc.text(`Categoría: ${team.category || 'N/A'} | Delegado: ${team.delegate_name || team.delegateName || 'N/A'}`, pageWidth / 2, 28, { align: "center" });
 
-            const tableColumn = ["#", "Jugador", "DNI", "Posición", "Camiseta", "Estado"];
+            const tableColumn = ["#", "Jugador", "DNI", "Estado"];
             const tableRows = teamPlayers.map((p, index) => [
                 index + 1,
                 p.name,
                 p.dni || 'N/A',
-                p.position || 'N/A',
-                p.number || 'SN',
                 p.status === 'active' ? 'Activo' : 'Inactivo'
             ]);
 
