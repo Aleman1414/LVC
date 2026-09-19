@@ -14,6 +14,9 @@ const Players = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterTeam, setFilterTeam] = useState('all');
     const [error, setError] = useState('');
+    const [lastSelectedTeam, setLastSelectedTeam] = useState(() => {
+        return localStorage.getItem('lvc_last_selected_team') || '';
+    });
 
     const [formData, setFormData] = useState({
         name: '',
@@ -52,6 +55,13 @@ const Players = () => {
             });
         } else {
             setCurrentPlayer(null);
+            // Mantener la última opción de equipo utilizada para mayor rapidez
+            const defaultTeamId = (lastSelectedTeam && teams.some(t => t.id === lastSelectedTeam))
+                ? lastSelectedTeam
+                : (filterTeam !== 'all' && teams.some(t => t.id === filterTeam))
+                    ? filterTeam
+                    : (teams[0]?.id || '');
+
             setFormData({
                 name: '',
                 dni: '',
@@ -59,7 +69,7 @@ const Players = () => {
                 position: 'Universal',
                 age: '',
                 status: 'active',
-                team_id: teams[0]?.id || ''
+                team_id: defaultTeamId
             });
         }
         setIsModalOpen(true);
@@ -132,6 +142,10 @@ const Players = () => {
                 await updateData(currentPlayer.id, playerData);
             } else {
                 await addData(playerData);
+                if (formData.team_id) {
+                    setLastSelectedTeam(formData.team_id);
+                    localStorage.setItem('lvc_last_selected_team', formData.team_id);
+                }
             }
             setIsModalOpen(false);
             setPhotoFile(null);
@@ -301,7 +315,14 @@ const Players = () => {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Equipo Pertenece</label>
                                 <select
                                     value={formData.team_id}
-                                    onChange={(e) => setFormData({ ...formData, team_id: e.target.value })}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFormData({ ...formData, team_id: val });
+                                        if (!currentPlayer && val) {
+                                            setLastSelectedTeam(val);
+                                            localStorage.setItem('lvc_last_selected_team', val);
+                                        }
+                                    }}
                                     className="input w-full"
                                     required
                                     disabled={!!currentPlayer} // Bloquear cambio directo de equipo en edición
