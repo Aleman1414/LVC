@@ -15,7 +15,11 @@ const TeamDetails = () => {
     const { data: matches, loading: matchesLoading } = useSupabase('matches');
 
     const team = useMemo(() => teams.find(t => t.id === teamId), [teams, teamId]);
-    const teamPlayers = useMemo(() => players.filter(p => (p.team_id || p.teamId) === teamId), [players, teamId]);
+    const teamPlayers = useMemo(() => {
+        return players
+            .filter(p => (p.team_id || p.teamId) === teamId)
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
+    }, [players, teamId]);
 
     const teamStats = useMemo(() => {
         if (!team || matchesLoading || teamsLoading) return null;

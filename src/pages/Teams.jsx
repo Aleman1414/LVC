@@ -86,7 +86,9 @@ const Teams = () => {
     };
 
     const generateRegistrationPDF = async (team) => {
-        const teamPlayers = players.filter(p => (p.team_id || p.teamId) === team.id);
+        const teamPlayers = players
+            .filter(p => (p.team_id || p.teamId) === team.id)
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' }));
         const doc = jsPDF();
         const pageWidth = doc.internal.pageSize.getWidth();
 
