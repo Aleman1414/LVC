@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
-import { Trophy, Calendar, Users, History, Layers } from 'lucide-react';
+import { sortMatchesByPriority } from '../utils/matchUtils';
+import { Trophy, Calendar, Users, History, Layers, ArrowRight } from 'lucide-react';
 
 const Dashboard = () => {
     const { userData } = useAuth();
@@ -13,7 +15,11 @@ const Dashboard = () => {
     const { data: matches } = useSupabase('matches', { leagueId: selectedLeague });
     const { data: sanctions } = useSupabase('sanctions', { leagueId: selectedLeague });
 
-    const upcomingMatches = matches?.filter(m => m.status !== 'finished').slice(0, 3) || [];
+    // Ordenar partidos por prioridad: los más cercanos a jugarse primero
+    const upcomingMatches = useMemo(() => {
+        if (!matches || matches.length === 0) return [];
+        return sortMatchesByPriority(matches.filter(m => m.status !== 'finished')).slice(0, 4);
+    }, [matches]);
 
     const stats = [
         { name: 'Equipos', value: teams?.length?.toString() || '0', icon: Trophy, color: 'text-primary' },
@@ -51,20 +57,28 @@ const Dashboard = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="card">
-                    <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-                        <Calendar size={20} className="text-primary" />
-                        <span>Próximos Partidos ({currentLeagueObj?.name})</span>
-                    </h2>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold flex items-center space-x-2">
+                            <Calendar size={20} className="text-primary" />
+                            <span>Próximos Partidos ({currentLeagueObj?.name})</span>
+                        </h2>
+                        <Link to="/matches" className="text-xs text-primary hover:text-primary-light font-semibold flex items-center space-x-1">
+                            <span>Ver todos</span>
+                            <ArrowRight size={14} />
+                        </Link>
+                    </div>
                     {upcomingMatches.length > 0 ? (
                         <div className="space-y-4">
                             {upcomingMatches.map((m) => (
                                 <div key={m.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
                                     <div className="flex items-center space-x-3 text-sm">
-                                        <span className="font-bold text-slate-800">{teams.find(t => t.id === m.team_a_id || t.id === m.teamAId)?.name || 'Equipo A'}</span>
-                                        <span className="text-slate-400 font-semibold">vs</span>
-                                        <span className="font-bold text-slate-800">{teams.find(t => t.id === m.team_b_id || t.id === m.teamBId)?.name || 'Equipo B'}</span>
+                                        <span className="font-bold text-slate-800">{teams?.find(t => t.id === m.team_a_id || t.id === m.teamAId)?.name || 'Equipo A'}</span>
+                                        <span className="text-slate-400 font-semibold text-xs">vs</span>
+                                        <span className="font-bold text-slate-800">{teams?.find(t => t.id === m.team_b_id || t.id === m.teamBId)?.name || 'Equipo B'}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500 font-medium bg-white px-2 py-1 rounded-md border">{m.date || 'Por definir'} {m.time}</div>
+                                    <div className="text-xs text-slate-600 font-medium bg-white px-2.5 py-1 rounded-md border border-slate-200 font-mono shrink-0">
+                                        {m.date || 'Por definir'} {m.time ? `• ${m.time}` : ''}
+                                    </div>
                                 </div>
                             ))}
                         </div>

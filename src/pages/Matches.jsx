@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
+import { sortMatchesByPriority } from '../utils/matchUtils';
 import { Plus, Calendar, MapPin, Play, CheckCircle, Clock, Edit2, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -12,6 +13,7 @@ const Matches = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentMatch, setCurrentMatch] = useState(null);
     const [error, setError] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'upcoming', 'finished'
     const [formData, setFormData] = useState({
         team_a_id: '',
         team_b_id: '',
@@ -23,6 +25,24 @@ const Matches = () => {
         setsB: 0,
         round: 'Jornada 1'
     });
+
+    // Ordenar partidos por prioridad: los más cercanos a jugarse primero
+    const sortedMatches = useMemo(() => {
+        return sortMatchesByPriority(matches || []);
+    }, [matches]);
+
+    const filteredMatches = useMemo(() => {
+        if (filterStatus === 'upcoming') {
+            return sortedMatches.filter(m => m.status !== 'finished');
+        }
+        if (filterStatus === 'finished') {
+            return sortedMatches.filter(m => m.status === 'finished');
+        }
+        return sortedMatches;
+    }, [sortedMatches, filterStatus]);
+
+    const upcomingCount = useMemo(() => (matches || []).filter(m => m.status !== 'finished').length, [matches]);
+    const finishedCount = useMemo(() => (matches || []).filter(m => m.status === 'finished').length, [matches]);
 
     const handleOpenModal = (match = null) => {
         setError('');
@@ -114,15 +134,52 @@ const Matches = () => {
                 </button>
             </div>
 
+            {/* Pestañas de Filtrado */}
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+                <button
+                    onClick={() => setFilterStatus('all')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        filterStatus === 'all'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    Todos ({sortedMatches.length})
+                </button>
+                <button
+                    onClick={() => setFilterStatus('upcoming')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                        filterStatus === 'upcoming'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    <Clock size={14} />
+                    <span>Próximos / Por Jugar ({upcomingCount})</span>
+                </button>
+                <button
+                    onClick={() => setFilterStatus('finished')}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                        filterStatus === 'finished'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                >
+                    <CheckCircle size={14} />
+                    <span>Finalizados ({finishedCount})</span>
+                </button>
+            </div>
+
             {/* Listado de partidos */}
             <div className="grid grid-cols-1 gap-4">
-                {matches.length > 0 ? (
-                    matches.map((match) => {
+                {filteredMatches.length > 0 ? (
+                    filteredMatches.map((match) => {
                         const teamA = teams.find(t => t.id === (match.team_a_id || match.teamAId));
                         const teamB = teams.find(t => t.id === (match.team_b_id || match.teamBId));
                         const setsA = match.score?.setsA ?? match.score?.sets_a ?? 0;
                         const setsB = match.score?.setsB ?? match.score?.sets_b ?? 0;
                         const isFinished = match.status === 'finished';
+                        const isLive = match.status === 'live';
 
                         return (
                             <div key={match.id} className="card border border-slate-100 hover:shadow-lg transition-all p-5 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -131,7 +188,7 @@ const Matches = () => {
                                     <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-center min-w-[90px]">
                                         <Calendar size={18} className="mx-auto text-primary mb-1" />
                                         <span className="block font-bold text-slate-700 text-xs">{match.date || 'Por definir'}</span>
-                                        <span className="block text-[11px]">{match.time || '--:--'}</span>
+                                        <span className="block text-[11px] font-mono">{match.time || '--:--'}</span>
                                     </div>
                                     <div className="hidden sm:block">
                                         <span className="inline-block bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded font-medium mb-1">{match.round || 'Jornada'}</span>
@@ -178,7 +235,18 @@ const Matches = () => {
 
                                 {/* Acciones */}
                                 <div className="flex items-center space-x-3 shrink-0">
-                                    {isFinished ? (
+                                    {isLive ? (
+                                        <div className="flex items-center space-x-2">
+                                            <span className="inline-flex items-center space-x-1.5 text-red-600 bg-red-50 px-3 py-1 rounded-xl text-xs font-extrabold border border-red-200 animate-pulse">
+                                                <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                                                <span>En Vivo</span>
+                                            </span>
+                                            <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
+                                                <Play size={14} />
+                                                <span>Anotar</span>
+                                            </Link>
+                                        </div>
+                                    ) : isFinished ? (
                                         <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-3 py-1 rounded-xl text-xs font-bold border border-green-200">
                                             <CheckCircle size={14} />
                                             <span>Finalizado</span>
@@ -190,7 +258,7 @@ const Matches = () => {
                                         </Link>
                                     )}
 
-                                    <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors">
+                                    <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Editar Partido">
                                         <Edit2 size={16} />
                                     </button>
                                 </div>
@@ -199,7 +267,11 @@ const Matches = () => {
                     })
                 ) : (
                     <div className="card text-center py-12 text-slate-400">
-                        No hay partidos programados en la {currentLeagueObj?.name}. Haz clic en "Programar Partido" para crear uno.
+                        {filterStatus === 'upcoming'
+                            ? `No hay partidos próximos pendientes por jugar en la ${currentLeagueObj?.name}.`
+                            : filterStatus === 'finished'
+                            ? `Aún no hay partidos finalizados en la ${currentLeagueObj?.name}.`
+                            : `No hay partidos registrados en la ${currentLeagueObj?.name}. Haz clic en "Programar Partido" para crear uno.`}
                     </div>
                 )}
             </div>
