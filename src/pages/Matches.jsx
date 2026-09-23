@@ -214,10 +214,17 @@ const Matches = () => {
                                     </div>
 
                                     {/* Score */}
-                                    <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl flex items-center space-x-3 shrink-0 font-extrabold text-xl shadow-inner">
-                                        <span>{setsA}</span>
-                                        <span className="text-secondary text-sm font-normal">VS</span>
-                                        <span>{setsB}</span>
+                                    <div className="flex flex-col items-center shrink-0">
+                                        <div className="bg-slate-900 text-white px-4 py-2 rounded-2xl flex items-center space-x-3 font-extrabold text-xl shadow-inner">
+                                            <span>{setsA}</span>
+                                            <span className="text-secondary text-sm font-normal">VS</span>
+                                            <span>{setsB}</span>
+                                        </div>
+                                        {match.score?.sets && match.score.sets.length > 0 && (
+                                            <div className="text-[11px] text-slate-500 font-mono mt-1 text-center font-medium bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                                                {match.score.sets.filter(s => s.a > 0 || s.b > 0).map(s => `${s.a}-${s.b}`).join(', ')}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Equipo B */}
@@ -234,7 +241,7 @@ const Matches = () => {
                                 </div>
 
                                 {/* Acciones */}
-                                <div className="flex items-center space-x-3 shrink-0">
+                                <div className="flex items-center space-x-2 shrink-0">
                                     {isLive ? (
                                         <div className="flex items-center space-x-2">
                                             <span className="inline-flex items-center space-x-1.5 text-red-600 bg-red-50 px-3 py-1 rounded-xl text-xs font-extrabold border border-red-200 animate-pulse">
@@ -243,22 +250,28 @@ const Matches = () => {
                                             </span>
                                             <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
                                                 <Play size={14} />
-                                                <span>Anotar</span>
+                                                <span>Cargar Resultados</span>
                                             </Link>
                                         </div>
                                     ) : isFinished ? (
-                                        <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-3 py-1 rounded-xl text-xs font-bold border border-green-200">
-                                            <CheckCircle size={14} />
-                                            <span>Finalizado</span>
-                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2.5 py-1 rounded-xl text-xs font-bold border border-green-200">
+                                                <CheckCircle size={14} />
+                                                <span>Finalizado</span>
+                                            </span>
+                                            <Link to={`/scorer/${match.id}`} className="btn border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs flex items-center space-x-1 py-1.5 px-2.5" title="Ver / Modificar resultados de sets">
+                                                <Edit2 size={13} />
+                                                <span>Editar Sets</span>
+                                            </Link>
+                                        </div>
                                     ) : (
                                         <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
                                             <Play size={14} />
-                                            <span>Anotar Partido</span>
+                                            <span>Cargar Resultados</span>
                                         </Link>
                                     )}
 
-                                    <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Editar Partido">
+                                    <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Editar Detalles del Partido">
                                         <Edit2 size={16} />
                                     </button>
                                 </div>
