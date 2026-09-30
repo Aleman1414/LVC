@@ -84,6 +84,48 @@ const Standings = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Tarjeta Informativa del Sistema de Puntos LVC */}
+            <div className="card bg-slate-50 border border-slate-200/80 p-5 rounded-2xl">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center space-x-2 mb-3">
+                    <Trophy size={16} className="text-secondary" />
+                    <span>Sistema Oficial de Puntuación de la LVC</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span className="font-extrabold text-slate-700 block">Victoria 3 - 0</span>
+                            <span className="text-slate-500">Sin sets concedidos</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-bold text-primary text-sm block">5 pts</span>
+                            <span className="text-slate-400 text-[11px]">Perdedor: 0 pts</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span className="font-extrabold text-slate-700 block">Victoria 3 - 1</span>
+                            <span className="text-slate-500">Un set concedido</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-bold text-primary text-sm block">4 pts</span>
+                            <span className="text-slate-400 text-[11px]">Perdedor: 1 pt</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <span className="font-extrabold text-slate-700 block">Victoria 3 - 2</span>
+                            <span className="text-slate-500">Definición en tie-break</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-bold text-primary text-sm block">3 pts</span>
+                            <span className="text-slate-400 text-[11px]">Perdedor: 2 pts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };

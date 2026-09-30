@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSupabase } from '../hooks/useSupabase';
 import { Trophy, ArrowLeft, Save, CheckCircle, AlertCircle, Calendar, Clock, MapPin, Award, Undo2 } from 'lucide-react';
+import { getLvcMatchPoints } from '../services/standingsService';
 
 const MatchScorer = () => {
     const { id } = useParams();
@@ -141,6 +142,11 @@ const MatchScorer = () => {
         return null;
     }, [totalSetsA, totalSetsB]);
 
+    // Puntos oficiales LVC correspondientes al resultado en sets
+    const lvcPoints = useMemo(() => {
+        return getLvcMatchPoints(totalSetsA, totalSetsB);
+    }, [totalSetsA, totalSetsB]);
+
     // Manejar cambio de puntos en un set
     const handleScoreChange = (setNumber, teamKey, value) => {
         setError('');
@@ -260,23 +266,28 @@ const MatchScorer = () => {
 
             {/* Banner de Estado del Partido */}
             {matchWinner && (
-                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-4 rounded-2xl shadow-lg flex items-center justify-between animate-fadeIn">
+                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
                     <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                            <Trophy size={22} className="text-white" />
+                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                            <Trophy size={24} className="text-white" />
                         </div>
                         <div>
                             <h3 className="font-extrabold text-lg">
                                 ¡Ganador: {matchWinner === 'teamA' ? teamA.name : teamB.name}!
                             </h3>
-                            <p className="text-xs text-amber-100 font-medium">
-                                Ha alcanzado 3 sets ganados ({totalSetsA} - {totalSetsB}). Partido definido según el reglamento oficial de voleibol.
+                            <p className="text-xs text-amber-100 font-medium mt-0.5">
+                                Marcador final: <strong>{totalSetsA} - {totalSetsB}</strong>. Puntos de clasificación LVC: <strong>{teamA.name} ({lvcPoints.pointsA} pts)</strong> • <strong>{teamB.name} ({lvcPoints.pointsB} pts)</strong>.
                             </p>
                         </div>
                     </div>
-                    <span className="text-2xl font-black bg-white/20 px-3 py-1 rounded-xl">
-                        {totalSetsA} - {totalSetsB}
-                    </span>
+                    <div className="text-right self-end sm:self-center shrink-0">
+                        <span className="text-3xl font-black bg-white/20 px-3 py-1 rounded-xl inline-block">
+                            {totalSetsA} - {totalSetsB}
+                        </span>
+                        <span className="block text-[11px] text-amber-100 font-bold uppercase tracking-wider mt-1">
+                            {matchWinner === 'teamA' ? `+${lvcPoints.pointsA} PTS` : `+${lvcPoints.pointsB} PTS`}
+                        </span>
+                    </div>
                 </div>
             )}
 
