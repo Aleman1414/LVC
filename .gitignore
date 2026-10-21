@@ -31,3 +31,5 @@ dev_uploads/*
 *.sln
 *.sw?
 
+.vercel
+.env*
