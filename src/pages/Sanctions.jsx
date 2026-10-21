@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
-import { Plus, Gavel, Trash2, Layers } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Plus, Gavel, Trash2, Layers, Eye } from 'lucide-react';
 
 const Sanctions = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj } = useLeague();
     const { data: sanctions, loading: sanctionsLoading, addData, deleteData } = useSupabase('sanctions', { leagueId: selectedLeague });
     const { data: players } = useSupabase('players', { leagueId: selectedLeague });
@@ -57,15 +59,25 @@ const Sanctions = () => {
                         <Gavel className="text-secondary" />
                         <span>Control de Sanciones</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn btn-secondary flex items-center space-x-2 w-full sm:w-auto">
-                    <Plus size={18} />
-                    <span>Registrar Sanción</span>
-                </button>
+                {canEdit && (
+                    <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn btn-secondary flex items-center space-x-2 w-full sm:w-auto">
+                        <Plus size={18} />
+                        <span>Registrar Sanción</span>
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -94,11 +106,13 @@ const Sanctions = () => {
                                     {sanc.fine > 0 && <p><strong className="text-slate-700">Multa:</strong> L. {sanc.fine}</p>}
                                 </div>
 
-                                <div className="flex justify-end pt-2 border-t border-slate-100">
-                                    <button onClick={() => deleteData(sanc.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Sanción">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                                {canEdit && (
+                                    <div className="flex justify-end pt-2 border-t border-slate-100">
+                                        <button onClick={() => deleteData(sanc.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Sanción">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })

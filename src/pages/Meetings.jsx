@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
+import { useAuth } from '../context/AuthContext';
 import { FileText, Plus, Download, Eye, Trash2, Layers } from 'lucide-react';
 
 const Meetings = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj } = useLeague();
     const { data: meetings, loading, addData, deleteData, uploadFile } = useSupabase('meetings', { leagueId: selectedLeague });
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,15 +47,25 @@ const Meetings = () => {
                         <FileText className="text-secondary" />
                         <span>Actas de Reuniones</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
-                    <Plus size={18} />
-                    <span>Subir Nueva Acta</span>
-                </button>
+                {canEdit && (
+                    <button onClick={() => { setError(''); setIsModalOpen(true); }} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
+                        <Plus size={18} />
+                        <span>Subir Nueva Acta</span>
+                    </button>
+                )}
             </div>
 
             <div className="space-y-4">
@@ -94,17 +106,19 @@ const Meetings = () => {
                                             </a>
                                         </>
                                     )}
-                                    <button
-                                        onClick={() => {
-                                            if (window.confirm('¿Seguro que deseas eliminar esta acta?')) {
-                                                deleteData(meeting.id);
-                                            }
-                                        }}
-                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Eliminar Acta"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {canEdit && (
+                                        <button
+                                            onClick={() => {
+                                                if (window.confirm('¿Seguro que deseas eliminar esta acta?')) {
+                                                    deleteData(meeting.id);
+                                                }
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Eliminar Acta"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

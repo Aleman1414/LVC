@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
+import { useAuth } from '../context/AuthContext';
 import { sortMatchesByPriority } from '../utils/matchUtils';
-import { Plus, Calendar, MapPin, Play, CheckCircle, Clock, Edit2, Layers } from 'lucide-react';
+import { Plus, Calendar, MapPin, Play, CheckCircle, Clock, Edit2, Layers, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Matches = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj } = useLeague();
     const { data: matches, loading: matchesLoading, addData, updateData } = useSupabase('matches', { leagueId: selectedLeague });
     const { data: teams, loading: teamsLoading } = useSupabase('teams', { leagueId: selectedLeague });
@@ -123,15 +125,25 @@ const Matches = () => {
                         <Calendar className="text-secondary" />
                         <span>Partidos y Calendario</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
-                    <Plus size={18} />
-                    <span>Programar Partido</span>
-                </button>
+                {canEdit && (
+                    <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
+                        <Plus size={18} />
+                        <span>Programar Partido</span>
+                    </button>
+                )}
             </div>
 
             {/* Pestañas de Filtrado */}
@@ -242,38 +254,61 @@ const Matches = () => {
 
                                 {/* Acciones */}
                                 <div className="flex items-center space-x-2 shrink-0">
-                                    {isLive ? (
-                                        <div className="flex items-center space-x-2">
-                                            <span className="inline-flex items-center space-x-1.5 text-red-600 bg-red-50 px-3 py-1 rounded-xl text-xs font-extrabold border border-red-200 animate-pulse">
-                                                <span className="w-2 h-2 rounded-full bg-red-600"></span>
-                                                <span>En Vivo</span>
-                                            </span>
-                                            <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
-                                                <Play size={14} />
-                                                <span>Cargar Resultados</span>
-                                            </Link>
-                                        </div>
-                                    ) : isFinished ? (
-                                        <div className="flex items-center space-x-2">
-                                            <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2.5 py-1 rounded-xl text-xs font-bold border border-green-200">
-                                                <CheckCircle size={14} />
-                                                <span>Finalizado</span>
-                                            </span>
-                                            <Link to={`/scorer/${match.id}`} className="btn border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs flex items-center space-x-1 py-1.5 px-2.5" title="Ver / Modificar resultados de sets">
-                                                <Edit2 size={13} />
-                                                <span>Editar Sets</span>
-                                            </Link>
-                                        </div>
-                                    ) : (
-                                        <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
-                                            <Play size={14} />
-                                            <span>Cargar Resultados</span>
-                                        </Link>
-                                    )}
+                                    {canEdit ? (
+                                        <>
+                                            {isLive ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="inline-flex items-center space-x-1.5 text-red-600 bg-red-50 px-3 py-1 rounded-xl text-xs font-extrabold border border-red-200 animate-pulse">
+                                                        <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                                                        <span>En Vivo</span>
+                                                    </span>
+                                                    <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
+                                                        <Play size={14} />
+                                                        <span>Cargar Resultados</span>
+                                                    </Link>
+                                                </div>
+                                            ) : isFinished ? (
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2.5 py-1 rounded-xl text-xs font-bold border border-green-200">
+                                                        <CheckCircle size={14} />
+                                                        <span>Finalizado</span>
+                                                    </span>
+                                                    <Link to={`/scorer/${match.id}`} className="btn border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs flex items-center space-x-1 py-1.5 px-2.5" title="Ver / Modificar resultados de sets">
+                                                        <Edit2 size={13} />
+                                                        <span>Editar Sets</span>
+                                                    </Link>
+                                                </div>
+                                            ) : (
+                                                <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
+                                                    <Play size={14} />
+                                                    <span>Cargar Resultados</span>
+                                                </Link>
+                                            )}
 
-                                    <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Editar Detalles del Partido">
-                                        <Edit2 size={16} />
-                                    </button>
+                                            <button onClick={() => handleOpenModal(match)} className="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors" title="Editar Detalles del Partido">
+                                                <Edit2 size={16} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center space-x-2">
+                                            {isLive && (
+                                                <span className="inline-flex items-center space-x-1.5 text-red-600 bg-red-50 px-2.5 py-1 rounded-xl text-xs font-extrabold border border-red-200 animate-pulse">
+                                                    <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                                                    <span>En Vivo</span>
+                                                </span>
+                                            )}
+                                            {isFinished && (
+                                                <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2 py-1 rounded-xl text-xs font-bold border border-green-200">
+                                                    <CheckCircle size={13} />
+                                                    <span>Finalizado</span>
+                                                </span>
+                                            )}
+                                            <Link to={`/scorer/${match.id}`} className="btn border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs flex items-center space-x-1.5 py-1.5 px-3" title="Consultar marcador de sets">
+                                                <Eye size={14} />
+                                                <span>Ver Marcador</span>
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

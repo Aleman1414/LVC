@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
-import { ArrowRightLeft, Plus, Calendar, Layers, User, Trophy, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { ArrowRightLeft, Plus, Calendar, Layers, User, Trophy, CheckCircle, Eye } from 'lucide-react';
 
 const Transfers = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj } = useLeague();
     const { data: transfers, loading: transfersLoading, addData: addTransfer } = useSupabase('transfers', { leagueId: selectedLeague });
     const { data: players, loading: playersLoading, updateData: updatePlayer } = useSupabase('players', { leagueId: selectedLeague });
@@ -92,15 +94,25 @@ const Transfers = () => {
                         <ArrowRightLeft className="text-secondary" />
                         <span>Mercado de Traspasos</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <button onClick={handleOpenModal} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
-                    <Plus size={18} />
-                    <span>Realizar Traspaso</span>
-                </button>
+                {canEdit && (
+                    <button onClick={handleOpenModal} className="btn btn-primary flex items-center space-x-2 w-full sm:w-auto">
+                        <Plus size={18} />
+                        <span>Realizar Traspaso</span>
+                    </button>
+                )}
             </div>
 
             {/* Listado de Traspasos */}

@@ -36,7 +36,22 @@ const Dashboard = () => {
                         <Layers size={18} />
                         <span className="font-semibold text-xs uppercase tracking-wider">{currentLeagueObj?.name || 'Liga de Voleibol'}</span>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold">¡Hola, {userData?.full_name || userData?.displayName || 'Visitante'}! 👋</h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold">¡Hola, {userData?.full_name || userData?.displayName || 'Visitante'}! 👋</h1>
+                        {userData?.isSuperAdmin ? (
+                            <span className="bg-amber-400 text-slate-900 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm">
+                                ⭐ Super Usuario
+                            </span>
+                        ) : userData?.role === 'admin' ? (
+                            <span className="bg-white/20 text-white text-xs font-bold px-2.5 py-0.5 rounded-full border border-white/30">
+                                🛡️ Administrativo
+                            </span>
+                        ) : (
+                            <span className="bg-teal-500/30 text-teal-200 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-teal-400/40">
+                                👁️ Delegado de Liga (Modo Observador)
+                            </span>
+                        )}
+                    </div>
                     <p className="text-slate-200 text-sm mt-1">Panel general de estadísticas y control de la liga.</p>
                 </div>
             </div>

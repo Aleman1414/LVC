@@ -21,37 +21,34 @@ const Register = () => {
             return setError('Las contraseñas no coinciden');
         }
 
+        if (password.length < 6) {
+            return setError('La contraseña debe tener al menos 6 caracteres');
+        }
+
         try {
             setError('');
             setLoading(true);
-            const data = await signup(email, password, displayName);
-
-            if (data?.user) {
-                // Upsert profile in Supabase profiles table
-                await supabase.from('profiles').upsert({
-                    id: data.user.id,
-                    email: email,
-                    full_name: displayName,
-                    role: 'user'
-                });
-            }
-
+            await signup(email, password, displayName);
             navigate('/');
         } catch (err) {
-            setError('Error al crear la cuenta. Intenta de nuevo.');
+            setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
             console.error(err);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-primary px-4">
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-                <div className="flex flex-col items-center mb-8">
-                    <div className="bg-secondary p-3 rounded-full mb-4">
+                <div className="flex flex-col items-center mb-6 text-center">
+                    <div className="bg-secondary p-3 rounded-full mb-3 shadow-md">
                         <Trophy className="text-white" size={32} />
                     </div>
-                    <h2 className="text-3xl font-bold text-primary">Registro LVC</h2>
+                    <h2 className="text-3xl font-extrabold text-primary">Registro LVC</h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Crea tu cuenta oficial. Las nuevas cuentas son autorizadas por el Administrador para asignar tu rol de acceso.
+                    </p>
                 </div>
 
                 {error && (

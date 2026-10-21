@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import LeagueSelector from './LeagueSelector';
 
 const Navbar = () => {
-    const { userData, logout } = useAuth();
+    const { userData, currentUser, isSuperAdmin, isAdmin, isDelegate, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -36,12 +36,12 @@ const Navbar = () => {
         { name: 'Equipos', path: '/teams', icon: ShieldAlert },
         { name: 'Jugadores', path: '/players', icon: Users },
         { name: 'Traspasos', path: '/transfers', icon: ArrowRightLeft },
+        { name: 'Sanciones', path: '/sanctions', icon: History },
+        { name: 'Actas', path: '/meetings', icon: FileText }
     ];
 
-    if (userData?.role === 'admin') {
-        navItems.push({ name: 'Sanciones', path: '/sanctions', icon: History });
-        navItems.push({ name: 'Actas', path: '/meetings', icon: FileText });
-        navItems.push({ name: 'Admin', path: '/admin', icon: Settings });
+    if (isAdmin) {
+        navItems.push({ name: 'Panel Admin', path: '/admin', icon: Settings });
     }
 
     return (
@@ -78,12 +78,41 @@ const Navbar = () => {
                     ))}
                 </div>
 
-                <div className="p-4 border-t border-primary-light">
+                {/* Perfil & Rol Footer */}
+                <div className="p-4 border-t border-primary-light space-y-3">
+                    <div className="px-3 py-2 bg-slate-900/40 rounded-xl border border-slate-700/50">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-7 h-7 rounded-full bg-secondary text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                {(userData?.full_name || currentUser?.email || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div className="overflow-hidden flex-1">
+                                <p className="text-xs font-bold text-white truncate">{userData?.full_name || 'Usuario'}</p>
+                                <p className="text-[10px] text-slate-300 truncate">{currentUser?.email}</p>
+                            </div>
+                        </div>
+                        <div className="mt-2 pt-1 border-t border-slate-700/40 flex items-center justify-between">
+                            <span className="text-[10px] text-slate-400">Rol:</span>
+                            {isSuperAdmin ? (
+                                <span className="bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                                    ⭐ Super Usuario
+                                </span>
+                            ) : isAdmin ? (
+                                <span className="bg-primary-light text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    🛡️ Administrativo
+                                </span>
+                            ) : (
+                                <span className="bg-teal-600/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                    👁️ Delegado Liga
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
                     <button
                         onClick={handleLogout}
-                        className="flex items-center space-x-3 px-6 py-3 w-full text-slate-300 hover:bg-primary-light hover:text-white transition-colors rounded-lg text-sm"
+                        className="flex items-center space-x-3 px-3 py-2.5 w-full text-slate-300 hover:bg-red-500/20 hover:text-red-300 transition-colors rounded-lg text-xs"
                     >
-                        <LogOut size={20} />
+                        <LogOut size={16} />
                         <span>Cerrar Sesión</span>
                     </button>
                 </div>

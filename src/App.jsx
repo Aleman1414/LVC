@@ -16,6 +16,7 @@ import Standings from './pages/Standings';
 import MatchScorer from './pages/MatchScorer';
 import Sanctions from './pages/Sanctions';
 import Meetings from './pages/Meetings';
+import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -50,7 +51,7 @@ function App() {
                 path="admin"
                 element={
                   <PrivateRoute roles={['admin']}>
-                    <div className="card"><h1>Panel Admin</h1></div>
+                    <Admin />
                   </PrivateRoute>
                 }
               />

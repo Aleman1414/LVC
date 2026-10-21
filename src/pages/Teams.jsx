@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
+import { useAuth } from '../context/AuthContext';
 import { Plus, Edit2, Trash2, Trophy, Eye, FileText, Download, Layers } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const Teams = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj, leagues } = useLeague();
     const { data: teams, loading: teamsLoading, addData, updateData, deleteData, uploadFile } = useSupabase('teams', { leagueId: selectedLeague });
     const { data: players, loading: playersLoading } = useSupabase('players', { leagueId: selectedLeague });
@@ -189,20 +191,30 @@ const Teams = () => {
                         <Trophy className="text-secondary" />
                         <span>Equipos</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center space-x-2 w-full sm:w-auto">
                     <button onClick={exportToExcel} className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-2">
                         <Download size={18} />
                         <span>Exportar Excel</span>
                     </button>
-                    <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
-                        <Plus size={18} />
-                        <span>Nuevo Equipo</span>
-                    </button>
+                    {canEdit && (
+                        <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
+                            <Plus size={18} />
+                            <span>Nuevo Equipo</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -245,13 +257,17 @@ const Teams = () => {
                                         <button onClick={() => generateRegistrationPDF(team)} className="p-2 text-slate-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Descargar Ficha PDF">
                                             <FileText size={18} />
                                         </button>
-                                        <button onClick={() => handleOpenModal(team)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Equipo">
-                                            <Edit2 size={18} />
-                                        </button>
+                                        {canEdit && (
+                                            <button onClick={() => handleOpenModal(team)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Equipo">
+                                                <Edit2 size={18} />
+                                            </button>
+                                        )}
                                     </div>
-                                    <button onClick={() => deleteData(team.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Equipo">
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {canEdit && (
+                                        <button onClick={() => deleteData(team.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Equipo">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

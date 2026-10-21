@@ -112,14 +112,31 @@ CREATE TABLE IF NOT EXISTS public.meetings (
 -- ========================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    v_role TEXT;
 BEGIN
+    IF lower(new.email) = 'angel.aleman1414@gmail.com' THEN
+        v_role := 'admin';
+    ELSE
+        v_role := coalesce(new.raw_user_meta_data->>'role', 'pending');
+    END IF;
+
     INSERT INTO public.profiles (id, email, full_name, role)
     VALUES (
         new.id,
         new.email,
-        coalesce(new.raw_user_meta_data->>'full_name', new.email),
-        coalesce(new.raw_user_meta_data->>'role', 'user')
-    );
+        coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+        v_role
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET 
+        email = EXCLUDED.email,
+        full_name = coalesce(EXCLUDED.full_name, public.profiles.full_name),
+        role = CASE 
+            WHEN lower(EXCLUDED.email) = 'angel.aleman1414@gmail.com' THEN 'admin'
+            ELSE coalesce(public.profiles.role, EXCLUDED.role)
+        END;
+
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

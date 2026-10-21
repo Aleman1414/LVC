@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
-import { Plus, Edit2, Trash2, User, Search, Filter, Layers, ArrowRightLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Plus, Edit2, Trash2, User, Search, Filter, Layers, ArrowRightLeft, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Players = () => {
+    const { canEdit, isDelegate } = useAuth();
     const { selectedLeague, currentLeagueObj } = useLeague();
     const { data: players, loading: playersLoading, addData, updateData, deleteData, uploadFile } = useSupabase('players', { leagueId: selectedLeague });
     const { data: teams, loading: teamsLoading } = useSupabase('teams', { leagueId: selectedLeague });
@@ -165,20 +167,30 @@ const Players = () => {
                         <User className="text-secondary" />
                         <span>Jugadores</span>
                     </h1>
-                    <p className="text-sm text-slate-500 flex items-center space-x-1 mt-1">
-                        <Layers size={14} className="text-slate-400" />
-                        <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
-                    </p>
+                    <div className="flex items-center space-x-2 mt-1">
+                        <p className="text-sm text-slate-500 flex items-center space-x-1">
+                            <Layers size={14} className="text-slate-400" />
+                            <span>Liga seleccionada: <strong>{currentLeagueObj?.name}</strong></span>
+                        </p>
+                        {isDelegate && (
+                            <span className="bg-teal-50 text-teal-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-200 inline-flex items-center space-x-1">
+                                <Eye size={12} />
+                                <span>Modo Observador</span>
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex items-center space-x-3 w-full sm:w-auto">
                     <Link to="/transfers" className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 flex items-center space-x-2">
                         <ArrowRightLeft size={18} />
                         <span>Ir a Traspasos</span>
                     </Link>
-                    <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
-                        <Plus size={18} />
-                        <span>Nuevo Jugador</span>
-                    </button>
+                    {canEdit && (
+                        <button onClick={() => handleOpenModal()} className="btn btn-primary flex items-center space-x-2">
+                            <Plus size={18} />
+                            <span>Nuevo Jugador</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -255,14 +267,16 @@ const Players = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                                    <button onClick={() => handleOpenModal(player)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Jugador">
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => deleteData(player.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Jugador">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                                {canEdit && (
+                                    <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                                        <button onClick={() => handleOpenModal(player)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Jugador">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => deleteData(player.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Jugador">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })

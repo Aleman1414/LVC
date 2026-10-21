@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSupabase } from '../hooks/useSupabase';
-import { Trophy, ArrowLeft, Save, CheckCircle, AlertCircle, Calendar, Clock, MapPin, Award, Undo2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Trophy, ArrowLeft, Save, CheckCircle, AlertCircle, Calendar, Clock, MapPin, Award, Undo2, Eye } from 'lucide-react';
 import { getLvcMatchPoints } from '../services/standingsService';
 
 const MatchScorer = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { canEdit, isDelegate } = useAuth();
     const { data: matches, updateData } = useSupabase('matches');
     const { data: teams } = useSupabase('teams');
 
@@ -291,6 +293,16 @@ const MatchScorer = () => {
                 </div>
             )}
 
+            {!canEdit && (
+                <div className="bg-teal-50 border border-teal-300 text-teal-800 p-4 rounded-2xl flex items-center space-x-3 shadow-sm">
+                    <Eye size={22} className="text-teal-600 shrink-0" />
+                    <div>
+                        <p className="font-bold text-sm">Modo Observador — Delegado de Liga</p>
+                        <p className="text-xs text-teal-700 mt-0.5">Tienes acceso de consulta para verificar los marcadores de sets en tiempo real. La anotación y modificación oficial está reservada al personal administrativo.</p>
+                    </div>
+                </div>
+            )}
+
             {savedMessage && (
                 <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-2xl flex items-center space-x-2">
                     <CheckCircle size={20} className="text-green-600 shrink-0" />
@@ -425,13 +437,13 @@ const MatchScorer = () => {
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
-                                                disabled={isUnnecessary}
+                                                disabled={isUnnecessary || !canEdit}
                                                 value={set.a}
                                                 onChange={(e) => handleScoreChange(set.setNumber, 'a', e.target.value)}
                                                 placeholder="0"
                                                 className={`w-16 h-12 text-center text-xl font-mono font-black rounded-xl border-2 transition-all ${
-                                                    isUnnecessary
-                                                        ? 'bg-slate-200 text-slate-400 border-slate-300'
+                                                    isUnnecessary || !canEdit
+                                                        ? 'bg-slate-100 text-slate-700 border-slate-200 cursor-not-allowed'
                                                         : isWonByA
                                                         ? 'bg-primary/5 text-primary border-primary shadow-sm'
                                                         : 'bg-white text-slate-800 border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20'
@@ -446,13 +458,13 @@ const MatchScorer = () => {
                                             <input
                                                 type="text"
                                                 inputMode="numeric"
-                                                disabled={isUnnecessary}
+                                                disabled={isUnnecessary || !canEdit}
                                                 value={set.b}
                                                 onChange={(e) => handleScoreChange(set.setNumber, 'b', e.target.value)}
                                                 placeholder="0"
                                                 className={`w-16 h-12 text-center text-xl font-mono font-black rounded-xl border-2 transition-all ${
-                                                    isUnnecessary
-                                                        ? 'bg-slate-200 text-slate-400 border-slate-300'
+                                                    isUnnecessary || !canEdit
+                                                        ? 'bg-slate-100 text-slate-700 border-slate-200 cursor-not-allowed'
                                                         : isWonByB
                                                         ? 'bg-secondary/5 text-secondary border-secondary shadow-sm'
                                                         : 'bg-white text-slate-800 border-slate-200 focus:border-secondary focus:ring-2 focus:ring-secondary/20'
@@ -489,39 +501,56 @@ const MatchScorer = () => {
 
             {/* Botones de Acción */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                {isFinished && (
-                    <button
-                        type="button"
-                        onClick={handleReopenMatch}
-                        disabled={saving}
-                        className="btn border border-slate-300 text-slate-600 bg-white hover:bg-slate-50 text-xs flex items-center space-x-1.5 py-3 px-4 w-full sm:w-auto"
-                    >
-                        <Undo2 size={16} />
-                        <span>Reabrir Partido para Editar</span>
-                    </button>
+                {canEdit ? (
+                    <>
+                        {isFinished && (
+                            <button
+                                type="button"
+                                onClick={handleReopenMatch}
+                                disabled={saving}
+                                className="btn border border-slate-300 text-slate-600 bg-white hover:bg-slate-50 text-xs flex items-center space-x-1.5 py-3 px-4 w-full sm:w-auto"
+                            >
+                                <Undo2 size={16} />
+                                <span>Reabrir Partido para Editar</span>
+                            </button>
+                        )}
+
+                        <div className="flex items-center space-x-3 w-full sm:w-auto sm:ml-auto">
+                            <button
+                                type="button"
+                                onClick={() => handleSave(false)}
+                                disabled={saving}
+                                className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 py-3.5 px-6 flex-1 sm:flex-initial flex items-center justify-center space-x-2 font-semibold text-sm"
+                            >
+                                <Save size={18} />
+                                <span>{saving ? 'Guardando...' : 'Guardar Borrador'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => handleSave(true)}
+                                disabled={saving}
+                                className="btn btn-primary py-3.5 px-8 flex-1 sm:flex-initial flex items-center justify-center space-x-2 font-bold text-sm shadow-md"
+                            >
+                                <CheckCircle size={18} />
+                                <span>{saving ? 'Finalizando...' : 'Finalizar y Guardar Partido'}</span>
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="w-full flex items-center justify-between">
+                        <Link
+                            to="/matches"
+                            className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 py-3 px-6 flex items-center space-x-2 font-semibold text-sm"
+                        >
+                            <ArrowLeft size={18} />
+                            <span>Volver al Calendario</span>
+                        </Link>
+                        <span className="text-xs text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-xl font-medium">
+                            👁️ Modo Observador Activo — No se pueden guardar cambios
+                        </span>
+                    </div>
                 )}
-
-                <div className="flex items-center space-x-3 w-full sm:w-auto sm:ml-auto">
-                    <button
-                        type="button"
-                        onClick={() => handleSave(false)}
-                        disabled={saving}
-                        className="btn border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 py-3.5 px-6 flex-1 sm:flex-initial flex items-center justify-center space-x-2 font-semibold text-sm"
-                    >
-                        <Save size={18} />
-                        <span>{saving ? 'Guardando...' : 'Guardar Borrador'}</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => handleSave(true)}
-                        disabled={saving}
-                        className="btn btn-primary py-3.5 px-8 flex-1 sm:flex-initial flex items-center justify-center space-x-2 font-bold text-sm shadow-md"
-                    >
-                        <CheckCircle size={18} />
-                        <span>{saving ? 'Finalizando...' : 'Finalizar y Guardar Partido'}</span>
-                    </button>
-                </div>
             </div>
         </div>
     );
