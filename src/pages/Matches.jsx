@@ -3,7 +3,8 @@ import { useSupabase } from '../hooks/useSupabase';
 import { useLeague } from '../context/LeagueContext';
 import { useAuth } from '../context/AuthContext';
 import { sortMatchesByPriority } from '../utils/matchUtils';
-import { Plus, Calendar, MapPin, Play, CheckCircle, Clock, Edit2, Layers, Eye } from 'lucide-react';
+import { isExperimentalLeague } from '../utils/officialScoresheetUtils';
+import { Plus, Calendar, MapPin, Play, CheckCircle, Clock, Edit2, Layers, Eye, FileText, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Matches = () => {
@@ -146,6 +147,26 @@ const Matches = () => {
                 )}
             </div>
 
+            {/* Banner Informativo para Ligas con Mesa Técnica Experimental */}
+            {isExperimentalLeague(selectedLeague, currentLeagueObj?.slug, currentLeagueObj?.name) && (
+                <div className="bg-gradient-to-r from-amber-50 via-amber-100/60 to-indigo-50 border border-amber-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0">
+                            <Shield size={20} />
+                        </div>
+                        <div>
+                            <div className="flex items-center space-x-2">
+                                <span className="font-bold text-slate-800 text-sm">Apartado Experimental: Mesa de Control Oficial FIVB</span>
+                                <span className="bg-amber-500 text-white text-[10px] uppercase font-black px-2 py-0.5 rounded-full">Activo</span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                                Habilitado para los partidos de <strong>Liga B</strong> y <strong>Liga Femenina</strong>. Permite llevar la planilla oficial, rotación de jugadores (I-VI), saques, tiempos fuera, sustituciones y generar el PDF oficial.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Pestañas de Filtrado */}
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
                 <button
@@ -253,7 +274,19 @@ const Matches = () => {
                                 </div>
 
                                 {/* Acciones */}
-                                <div className="flex items-center space-x-2 shrink-0">
+                                <div className="flex items-center flex-wrap gap-2 shrink-0">
+                                    {/* Botón Mesa Técnica FIVB (Experimental para Liga B y Femenina) */}
+                                    {isExperimentalLeague(selectedLeague, currentLeagueObj?.slug, currentLeagueObj?.name) && (
+                                        <Link
+                                            to={`/official-scoresheet/${match.id}`}
+                                            className="btn bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs flex items-center space-x-1.5 py-1.5 px-3 rounded-xl shadow-sm font-bold border border-amber-600/30"
+                                            title="Abrir Mesa Técnica y Planilla Oficial FIVB"
+                                        >
+                                            <FileText size={14} />
+                                            <span>Mesa FIVB</span>
+                                        </Link>
+                                    )}
+
                                     {canEdit ? (
                                         <>
                                             {isLive ? (
@@ -264,7 +297,7 @@ const Matches = () => {
                                                     </span>
                                                     <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
                                                         <Play size={14} />
-                                                        <span>Cargar Resultados</span>
+                                                        <span>Marcador Rápido</span>
                                                     </Link>
                                                 </div>
                                             ) : isFinished ? (
@@ -281,7 +314,7 @@ const Matches = () => {
                                             ) : (
                                                 <Link to={`/scorer/${match.id}`} className="btn btn-secondary text-xs flex items-center space-x-1.5 py-1.5 px-3">
                                                     <Play size={14} />
-                                                    <span>Cargar Resultados</span>
+                                                    <span>Cargar Sets</span>
                                                 </Link>
                                             )}
 

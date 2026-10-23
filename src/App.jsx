@@ -14,6 +14,7 @@ import Transfers from './pages/Transfers';
 import Matches from './pages/Matches';
 import Standings from './pages/Standings';
 import MatchScorer from './pages/MatchScorer';
+import OfficialScoresheet from './pages/OfficialScoresheet';
 import Sanctions from './pages/Sanctions';
 import Meetings from './pages/Meetings';
 import Admin from './pages/Admin';
@@ -43,6 +44,7 @@ function App() {
               <Route path="matches" element={<Matches />} />
               <Route path="standings" element={<Standings />} />
               <Route path="scorer/:id" element={<MatchScorer />} />
+              <Route path="official-scoresheet/:id" element={<OfficialScoresheet />} />
               <Route path="sanctions" element={<Sanctions />} />
               <Route path="meetings" element={<Meetings />} />
               <Route path="stats" element={<Stats />} />
